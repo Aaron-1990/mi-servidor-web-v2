@@ -1,0 +1,108 @@
+﻿/**
+ * HourlyMetricsService
+ * 
+ * Business logic layer for hourly piece count breakdown.
+ * Transforms raw DB rows into a complete 24-hour response with
+ * totals, peak hour identification, and zero-filled gaps.
+ * 
+ * WHY this exists: The repository returns only hours with data.
+ * The dashboard needs ALL 24 hours (zeros shown as gray bars).
+ * This separation keeps SQL clean and business logic testable.
+ */
+
+class HourlyMetricsService {
+
+    /**
+     * @param {import('../infrastructure/repositories/HourlyMetricsRepository')} hourlyMetricsRepository
+     */
+    constructor(hourlyMetricsRepository) {
+        this.repository = hourlyMetricsRepository;
+    }
+
+    /**
+     * Get complete 24-hour breakdown for an equipment.
+     * 
+     * @param {string} equipmentId
+     * @param {string|null} targetDate - "YYYY-MM-DD" or null for today
+     * @returns {Promise<HourlyBreakdownResponse>}
+     */
+    async getHourlyBreakdown(equipmentId, targetDate = null) {
+        const rawData = await this.repository.getHourlyPieceCount(equipmentId, targetDate);
+
+        const hours = this._buildFullDayArray(rawData);
+        const totals = this._calculateTotals(hours);
+
+        return {
+            equipment_id: equipmentId,
+            date: targetDate || new Date().toISOString().split('T')[0],
+            hours,
+            totals
+        };
+    }
+
+    /**
+     * Build a complete 24-element array from sparse DB results.
+     * Hours without production get { pieces_ok: 0, pieces_ng: 0 }.
+     * 
+     * @param {Array<{hour: number, pieces_ok: string, pieces_ng: string}>} rawData
+     * @returns {HourlyBucket[]}
+     * @private
+     */
+    _buildFullDayArray(rawData) {
+        // O(n) map for lookup instead of O(n*24) nested loop
+        const dataByHour = new Map();
+        for (const row of rawData) {
+            dataByHour.set(parseInt(row.hour), {
+                pieces_ok: parseInt(row.pieces_ok) || 0,
+                pieces_ng: parseInt(row.pieces_ng) || 0
+            });
+        }
+
+        const hours = [];
+        for (let h = 0; h < 24; h++) {
+            const data = dataByHour.get(h) || { pieces_ok: 0, pieces_ng: 0 };
+            hours.push({
+                hour: h,
+                label: `${h.toString().padStart(2, '0')}:00`,
+                pieces_ok: data.pieces_ok,
+                pieces_ng: data.pieces_ng,
+                total: data.pieces_ok + data.pieces_ng
+            });
+        }
+
+        return hours;
+    }
+
+    /**
+     * Calculate aggregate totals and identify peak production hour.
+     * 
+     * @param {HourlyBucket[]} hours
+     * @returns {Object}
+     * @private
+     */
+    _calculateTotals(hours) {
+        let totalOk = 0;
+        let totalNg = 0;
+        let peakHour = null;
+        let peakCount = 0;
+
+        for (const h of hours) {
+            totalOk += h.pieces_ok;
+            totalNg += h.pieces_ng;
+
+            if (h.total > peakCount) {
+                peakCount = h.total;
+                peakHour = { hour: h.hour, label: h.label, count: h.total };
+            }
+        }
+
+        return {
+            pieces_ok: totalOk,
+            pieces_ng: totalNg,
+            total: totalOk + totalNg,
+            peak_hour: peakHour
+        };
+    }
+}
+
+module.exports = HourlyMetricsService;

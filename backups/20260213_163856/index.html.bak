@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSM Monitor - Real Time</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+        h1 { color: #00d4ff; margin-bottom: 10px; }
+        .status { padding: 10px; background: #16213e; border-radius: 8px; margin-bottom: 20px; }
+        .status.connected { border-left: 4px solid #00ff88; }
+        .status.disconnected { border-left: 4px solid #ff4444; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        .process-card { background: #16213e; border-radius: 10px; padding: 15px; }
+        .process-name { font-size: 1.1em; font-weight: bold; color: #00d4ff; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .equipment { background: #0f0f23; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+        .equipment-name { font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.85em; }
+        .metric { text-align: center; }
+        .metric-label { color: #888; font-size: 0.75em; }
+        .metric-value { font-size: 1.3em; font-weight: bold; }
+        .metric-value.realtime { color: #00ff88; }
+        .metric-value.hour { color: #ffaa00; }
+        .metric-value.shift { color: #00d4ff; }
+        .metrics-row { margin-bottom: 6px; }
+        .metrics-row-label { font-size: 0.7em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .pieces { margin-top: 8px; font-size: 0.8em; color: #888; }
+        .pieces .ok { color: #00ff88; }
+        .pieces .ng { color: #ff4444; }
+        .timestamp { font-size: 0.8em; color: #666; }
+        .totals { background: #00d4ff22; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 30px; }
+        .total-item { text-align: center; }
+        .total-value { font-size: 2em; font-weight: bold; color: #00d4ff; }
+        .total-label { font-size: 0.8em; color: #888; }
+    </style>
+</head>
+<body>
+    <h1>VSM Real-Time Monitor</h1>
+    <div id="status" class="status disconnected">Connecting...</div>
+    
+    <div id="totals" class="totals"></div>
+    <div id="grid" class="grid"></div>
+
+    <script>
+        const socket = io('http://localhost:3000');
+        const statusEl = document.getElementById('status');
+        const totalsEl = document.getElementById('totals');
+        const gridEl = document.getElementById('grid');
+
+        socket.on('connect', () => {
+            statusEl.className = 'status connected';
+            statusEl.innerHTML = 'Connected <span class="timestamp">Socket ID: ' + socket.id + '</span>';
+        });
+
+        socket.on('disconnect', () => {
+            statusEl.className = 'status disconnected';
+            statusEl.textContent = 'Disconnected - Reconnecting...';
+        });
+
+        function fmt(val) { const n = parseFloat(val); return isNaN(n) ? '-' : n.toFixed(1); }
+
+        socket.on('vsm-data', (data) => {
+            const time = new Date(data.timestamp).toLocaleTimeString();
+            statusEl.innerHTML = 'Connected - Shift: <strong>' + data.shift + '</strong> <span class="timestamp">Last update: ' + time + '</span>';
+            
+            // Calcular totales
+            let totalOK = 0, totalNG = 0, totalEquip = 0;
+            data.processes.forEach(p => {
+                p.equipments.forEach(e => {
+                    totalOK += parseInt(e.pieces_ok_shift) || 0;
+                    totalNG += parseInt(e.pieces_ng_shift) || 0;
+                    totalEquip++;
+                });
+            });
+            
+            totalsEl.innerHTML = `
+                <div class="total-item"><div class="total-value">${totalEquip}</div><div class="total-label">Equipments</div></div>
+                <div class="total-item"><div class="total-value" style="color:#00ff88">${totalOK.toLocaleString()}</div><div class="total-label">Pieces OK</div></div>
+                <div class="total-item"><div class="total-value" style="color:#ff4444">${totalNG}</div><div class="total-label">Pieces NG</div></div>
+                <div class="total-item"><div class="total-value">${(totalOK+totalNG)>0?((totalOK/(totalOK+totalNG))*100).toFixed(1):'0.0'}%</div><div class="total-label">Yield</div></div>
+            `;
+            
+            // Renderizar procesos
+            gridEl.innerHTML = data.processes.map(process => `
+                <div class="process-card">
+                    <div class="process-name">${process.process_name} <span style="font-weight:normal;font-size:0.8em;color:#888">(Design: ${process.design_ct}s)</span></div>
+                    ${process.equipments.map(eq => `
+                        <div class="equipment">
+                            <div class="equipment-name">${eq.equipment_name || eq.equipment_id}</div>
+                            <div class="metrics-row">
+                                <div class="metrics-row-label">CT Equipo</div>
+                                <div class="metrics">
+                                    <div class="metric">
+                                        <div class="metric-label">RT</div>
+                                        <div class="metric-value realtime">${fmt(eq.ct_equipo_realtime)}s</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-label">1 Hour</div>
+                                        <div class="metric-value hour">${fmt(eq.ct_equipo_hour)}s</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-label">Shift</div>
+                                        <div class="metric-value shift">${fmt(eq.ct_equipo_shift)}s</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="metrics-row">
+                                <div class="metrics-row-label">CT Proceso</div>
+                                <div class="metrics">
+                                    <div class="metric">
+                                        <div class="metric-label">RT</div>
+                                        <div class="metric-value realtime">${fmt(eq.ct_proceso_realtime)}s</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-label">1 Hour</div>
+                                        <div class="metric-value hour">${fmt(eq.ct_proceso_hour)}s</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div class="metric-label">Shift</div>
+                                        <div class="metric-value shift">${fmt(eq.ct_proceso_shift)}s</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pieces">
+                                Pieces: <span class="ok">${eq.pieces_ok_shift} OK</span> / <span class="ng">${eq.pieces_ng_shift} NG</span>
+                                | Samples: ${eq.samples_shift}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,441 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSM Monitor - Real Time</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+        h1 { color: #00d4ff; margin-bottom: 10px; }
+        .status { padding: 10px; background: #16213e; border-radius: 8px; margin-bottom: 20px; }
+        .status.connected { border-left: 4px solid #00ff88; }
+        .status.disconnected { border-left: 4px solid #ff4444; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        .process-card { background: #16213e; border-radius: 10px; padding: 15px; }
+        .process-name { font-size: 1.1em; font-weight: bold; color: #00d4ff; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .equipment { background: #0f0f23; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+        .equipment-name { font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.85em; }
+        .metric { text-align: center; }
+        .metric-label { color: #888; font-size: 0.75em; }
+        .metric-value { font-size: 1.3em; font-weight: bold; }
+        .metric-value.realtime { color: #00ff88; }
+        .metric-value.hour { color: #ffaa00; }
+        .metric-value.shift { color: #00d4ff; }
+        .metrics-row { margin-bottom: 6px; }
+        .metrics-row-label { font-size: 0.7em; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .pieces { margin-top: 8px; font-size: 0.8em; color: #888; }
+        .pieces .ok { color: #00ff88; }
+        .pieces .ng { color: #ff4444; }
+        .timestamp { font-size: 0.8em; color: #666; }
+        .totals { background: #00d4ff22; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 30px; }
+        .total-item { text-align: center; }
+        .total-value { font-size: 2em; font-weight: bold; color: #00d4ff; }
+        .total-label { font-size: 0.8em; color: #888; }
+
+        /* ==================== HOURLY BREAKDOWN ==================== */
+        .hourly-toggle {
+            margin-top: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            color: #00d4ff;
+            background: #1a1a3e;
+            border-radius: 4px;
+            user-select: none;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hourly-toggle:hover { background: #252550; }
+
+        .hourly-arrow {
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 0.7em;
+        }
+        .hourly-arrow.expanded { transform: rotate(90deg); }
+
+        .hourly-container {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease-out;
+            margin-top: 6px;
+        }
+        .hourly-container.expanded {
+            max-height: 800px;
+            transition: max-height 0.4s ease-in;
+        }
+
+        .hourly-content {
+            padding: 8px;
+            background: #12122a;
+            border-radius: 4px;
+            border: 1px solid #2a2a4a;
+        }
+
+        .hourly-bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2px;
+            height: 18px;
+        }
+
+        .hourly-label {
+            width: 42px;
+            font-size: 0.7em;
+            color: #666;
+            text-align: right;
+            padding-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .hourly-bar-track {
+            flex: 1;
+            height: 14px;
+            background: #1a1a30;
+            border-radius: 2px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .hourly-bar-ok {
+            height: 100%;
+            background: #00ff88;
+            transition: width 0.3s ease;
+        }
+        .hourly-bar-ng {
+            height: 100%;
+            background: #ff4444;
+            transition: width 0.3s ease;
+        }
+
+        .hourly-bar-empty .hourly-bar-track {
+            opacity: 0.3;
+        }
+
+        .hourly-count {
+            width: 50px;
+            font-size: 0.7em;
+            color: #888;
+            text-align: right;
+            padding-left: 6px;
+            flex-shrink: 0;
+        }
+
+        .hourly-summary {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7em;
+            color: #888;
+            padding-top: 6px;
+            border-top: 1px solid #2a2a4a;
+            margin-top: 4px;
+        }
+        .hourly-peak { color: #ffaa00; }
+
+        .hourly-loading {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.8em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>VSM Real-Time Monitor</h1>
+    <div id="status" class="status disconnected">Connecting...</div>
+    
+    <div id="totals" class="totals"></div>
+    <div id="grid" class="grid"></div>
+
+    <script>
+        // ==================== CONFIG ====================
+        const API_BASE = 'http://localhost:3000';
+
+        // ==================== HOURLY BREAKDOWN MANAGER (OOP) ====================
+
+        /**
+         * Manages collapsible hourly breakdown sections across re-renders.
+         * 
+         * Problem: gridEl.innerHTML is replaced every 5s by WebSocket push,
+         * destroying any expanded hourly sections. This class preserves state
+         * in memory and restores expanded sections after each re-render.
+         */
+        class HourlyBreakdownManager {
+
+            constructor(apiBaseUrl) {
+                this.apiBaseUrl = apiBaseUrl;
+                this.expandedCards = new Set();
+                this.cache = new Map();
+                this.refreshTimers = new Map();
+                this.CACHE_TTL_MS = 60000;
+                this.REFRESH_INTERVAL_MS = 60000;
+            }
+
+            async toggle(equipmentId) {
+                if (this.expandedCards.has(equipmentId)) {
+                    this._collapse(equipmentId);
+                } else {
+                    await this._expand(equipmentId);
+                }
+            }
+
+            restoreExpandedState() {
+                for (const equipmentId of this.expandedCards) {
+                    const cached = this._getCached(equipmentId);
+                    if (cached) {
+                        this._applyExpanded(equipmentId, cached);
+                    } else {
+                        this._expand(equipmentId);
+                    }
+                }
+            }
+
+            async _expand(equipmentId) {
+                this.expandedCards.add(equipmentId);
+                this._setArrowState(equipmentId, true);
+                this._setContainerExpanded(equipmentId, true);
+                this._showLoading(equipmentId);
+
+                try {
+                    const data = await this._fetchData(equipmentId);
+                    this._renderBarChart(equipmentId, data);
+                    this._startAutoRefresh(equipmentId);
+                } catch (error) {
+                    this._showError(equipmentId, error.message);
+                }
+            }
+
+            _collapse(equipmentId) {
+                this.expandedCards.delete(equipmentId);
+                this._setArrowState(equipmentId, false);
+                this._setContainerExpanded(equipmentId, false);
+                this._stopAutoRefresh(equipmentId);
+            }
+
+            _applyExpanded(equipmentId, data) {
+                this._setArrowState(equipmentId, true);
+                this._setContainerExpanded(equipmentId, true);
+                this._renderBarChart(equipmentId, data);
+            }
+
+            // ---- Data Layer ----
+
+            async _fetchData(equipmentId, bypassCache = false) {
+                if (!bypassCache) {
+                    const cached = this._getCached(equipmentId);
+                    if (cached) return cached;
+                }
+
+                const response = await fetch(this.apiBaseUrl + '/api/metrics/' + equipmentId + '/hourly');
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const json = await response.json();
+                if (!json.success) {
+                    throw new Error(json.error || 'Unknown error');
+                }
+
+                this.cache.set(equipmentId, {
+                    data: json,
+                    fetchedAt: Date.now()
+                });
+
+                return json;
+            }
+
+            _getCached(equipmentId) {
+                const entry = this.cache.get(equipmentId);
+                if (!entry) return null;
+                if (Date.now() - entry.fetchedAt > this.CACHE_TTL_MS) return null;
+                return entry.data;
+            }
+
+            // ---- Auto Refresh ----
+
+            _startAutoRefresh(equipmentId) {
+                this._stopAutoRefresh(equipmentId);
+                const self = this;
+                const timerId = setInterval(async function() {
+                    if (!self.expandedCards.has(equipmentId)) {
+                        self._stopAutoRefresh(equipmentId);
+                        return;
+                    }
+                    try {
+                        const data = await self._fetchData(equipmentId, true);
+                        self._renderBarChart(equipmentId, data);
+                    } catch (err) {
+                        // Silent fail on auto-refresh
+                    }
+                }, this.REFRESH_INTERVAL_MS);
+                this.refreshTimers.set(equipmentId, timerId);
+            }
+
+            _stopAutoRefresh(equipmentId) {
+                const timerId = this.refreshTimers.get(equipmentId);
+                if (timerId) {
+                    clearInterval(timerId);
+                    this.refreshTimers.delete(equipmentId);
+                }
+            }
+
+            // ---- DOM Manipulation ----
+
+            _setArrowState(equipmentId, expanded) {
+                const arrow = document.getElementById('arrow-' + equipmentId);
+                if (arrow) {
+                    arrow.classList.toggle('expanded', expanded);
+                }
+            }
+
+            _setContainerExpanded(equipmentId, expanded) {
+                const container = document.getElementById('hourly-' + equipmentId);
+                if (container) {
+                    container.classList.toggle('expanded', expanded);
+                }
+            }
+
+            _showLoading(equipmentId) {
+                const container = document.getElementById('hourly-' + equipmentId);
+                if (container) {
+                    container.innerHTML = '<div class="hourly-loading">Loading hourly data...</div>';
+                }
+            }
+
+            _showError(equipmentId, message) {
+                const container = document.getElementById('hourly-' + equipmentId);
+                if (container) {
+                    container.innerHTML = '<div class="hourly-loading" style="color:#ff4444">Error: ' + message + '</div>';
+                }
+            }
+
+            _renderBarChart(equipmentId, data) {
+                const container = document.getElementById('hourly-' + equipmentId);
+                if (!container || !data.hours) return;
+
+                var maxCount = 1;
+                for (var i = 0; i < data.hours.length; i++) {
+                    if (data.hours[i].total > maxCount) maxCount = data.hours[i].total;
+                }
+
+                var barsHtml = '';
+                for (var i = 0; i < data.hours.length; i++) {
+                    var h = data.hours[i];
+                    var okWidth = (h.pieces_ok / maxCount) * 100;
+                    var ngWidth = (h.pieces_ng / maxCount) * 100;
+                    var isEmpty = h.total === 0;
+                    var rowClass = isEmpty ? 'hourly-bar-row hourly-bar-empty' : 'hourly-bar-row';
+                    var countText = isEmpty ? '' : (h.pieces_ok + (h.pieces_ng > 0 ? '+' + h.pieces_ng : ''));
+
+                    barsHtml += '<div class="' + rowClass + '">'
+                        + '<span class="hourly-label">' + h.label + '</span>'
+                        + '<div class="hourly-bar-track">'
+                        + '<div class="hourly-bar-ok" style="width:' + okWidth + '%"></div>'
+                        + '<div class="hourly-bar-ng" style="width:' + ngWidth + '%"></div>'
+                        + '</div>'
+                        + '<span class="hourly-count">' + countText + '</span>'
+                        + '</div>';
+                }
+
+                var t = data.totals;
+                var peakText = t.peak_hour
+                    ? 'Peak: ' + t.peak_hour.label + ' (' + t.peak_hour.count + ' pcs)'
+                    : 'No production';
+
+                container.innerHTML = '<div class="hourly-content">'
+                    + barsHtml
+                    + '<div class="hourly-summary">'
+                    + '<span>Total: <span class="ok">' + t.pieces_ok + '</span> OK / <span class="ng">' + t.pieces_ng + '</span> NG</span>'
+                    + '<span class="hourly-peak">' + peakText + '</span>'
+                    + '</div></div>';
+            }
+        }
+
+        // ==================== INSTANTIATE MANAGER ====================
+        var hourlyManager = new HourlyBreakdownManager(API_BASE);
+
+        // ==================== SOCKET.IO ====================
+        var socket = io(API_BASE);
+        var statusEl = document.getElementById('status');
+        var totalsEl = document.getElementById('totals');
+        var gridEl = document.getElementById('grid');
+
+        socket.on('connect', function() {
+            statusEl.className = 'status connected';
+            statusEl.innerHTML = 'Connected <span class="timestamp">Socket ID: ' + socket.id + '</span>';
+        });
+
+        socket.on('disconnect', function() {
+            statusEl.className = 'status disconnected';
+            statusEl.textContent = 'Disconnected - Reconnecting...';
+        });
+
+        function fmt(val) { var n = parseFloat(val); return isNaN(n) ? '-' : n.toFixed(1); }
+
+        socket.on('vsm-data', function(data) {
+            var time = new Date(data.timestamp).toLocaleTimeString();
+            statusEl.innerHTML = 'Connected - Shift: <strong>' + data.shift + '</strong> <span class="timestamp">Last update: ' + time + '</span>';
+            
+            var totalOK = 0, totalNG = 0, totalEquip = 0;
+            data.processes.forEach(function(p) {
+                p.equipments.forEach(function(e) {
+                    totalOK += parseInt(e.pieces_ok_shift) || 0;
+                    totalNG += parseInt(e.pieces_ng_shift) || 0;
+                    totalEquip++;
+                });
+            });
+            
+            totalsEl.innerHTML = '<div class="total-item"><div class="total-value">' + totalEquip + '</div><div class="total-label">Equipments</div></div>'
+                + '<div class="total-item"><div class="total-value" style="color:#00ff88">' + totalOK.toLocaleString() + '</div><div class="total-label">Pieces OK</div></div>'
+                + '<div class="total-item"><div class="total-value" style="color:#ff4444">' + totalNG + '</div><div class="total-label">Pieces NG</div></div>'
+                + '<div class="total-item"><div class="total-value">' + ((totalOK+totalNG)>0?((totalOK/(totalOK+totalNG))*100).toFixed(1):'0.0') + '%</div><div class="total-label">Yield</div></div>';
+            
+            var html = '';
+            data.processes.forEach(function(process) {
+                html += '<div class="process-card">';
+                html += '<div class="process-name">' + process.process_name + ' <span style="font-weight:normal;font-size:0.8em;color:#888">(Design: ' + process.design_ct + 's)</span></div>';
+                
+                process.equipments.forEach(function(eq) {
+                    html += '<div class="equipment">';
+                    html += '<div class="equipment-name">' + (eq.equipment_name || eq.equipment_id) + '</div>';
+                    
+                    html += '<div class="metrics-row">';
+                    html += '<div class="metrics-row-label">CT Equipo</div>';
+                    html += '<div class="metrics">';
+                    html += '<div class="metric"><div class="metric-label">RT</div><div class="metric-value realtime">' + fmt(eq.ct_equipo_realtime) + 's</div></div>';
+                    html += '<div class="metric"><div class="metric-label">1 Hour</div><div class="metric-value hour">' + fmt(eq.ct_equipo_hour) + 's</div></div>';
+                    html += '<div class="metric"><div class="metric-label">Shift</div><div class="metric-value shift">' + fmt(eq.ct_equipo_shift) + 's</div></div>';
+                    html += '</div></div>';
+                    
+                    html += '<div class="metrics-row">';
+                    html += '<div class="metrics-row-label">CT Proceso</div>';
+                    html += '<div class="metrics">';
+                    html += '<div class="metric"><div class="metric-label">RT</div><div class="metric-value realtime">' + fmt(eq.ct_proceso_realtime) + 's</div></div>';
+                    html += '<div class="metric"><div class="metric-label">1 Hour</div><div class="metric-value hour">' + fmt(eq.ct_proceso_hour) + 's</div></div>';
+                    html += '<div class="metric"><div class="metric-label">Shift</div><div class="metric-value shift">' + fmt(eq.ct_proceso_shift) + 's</div></div>';
+                    html += '</div></div>';
+                    
+                    html += '<div class="pieces">Pieces: <span class="ok">' + eq.pieces_ok_shift + ' OK</span> / <span class="ng">' + eq.pieces_ng_shift + ' NG</span> | Samples: ' + eq.samples_shift + '</div>';
+                    
+                    html += '<div class="hourly-toggle" onclick="hourlyManager.toggle(\'' + eq.equipment_id + '\')">';
+                    html += '<span class="hourly-arrow" id="arrow-' + eq.equipment_id + '">&#9654;</span>';
+                    html += 'Hourly Breakdown</div>';
+                    html += '<div class="hourly-container" id="hourly-' + eq.equipment_id + '"></div>';
+                    
+                    html += '</div>';
+                });
+                
+                html += '</div>';
+            });
+            
+            gridEl.innerHTML = html;
+            hourlyManager.restoreExpandedState();
+        });
+    </script>
+</body>
+</html>
