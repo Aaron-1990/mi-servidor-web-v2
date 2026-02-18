@@ -1,4 +1,4 @@
-﻿/**
+/**
  * VSM Server con API REST + WebSocket
  * 
  * REST Endpoints:
@@ -181,6 +181,68 @@ app.get('/api/vsm', async (req, res) => {
     }
 });
 
+// PUT /api/equipment/:equipmentId/design-ct
+app.put('/api/equipment/:equipmentId/design-ct', async (req, res) => {
+    try {
+        const { equipmentId } = req.params;
+        const { design_ct } = req.body;
+
+        if (design_ct === undefined || design_ct === null) {
+            return res.status(400).json({ success: false, error: 'design_ct is required' });
+        }
+        const value = parseFloat(design_ct);
+        if (isNaN(value) || value <= 0) {
+            return res.status(400).json({ success: false, error: 'design_ct must be a positive number' });
+        }
+
+        const result = await pool.query(
+            'UPDATE equipment_design SET design_ct = $1 WHERE equipment_id = $2 RETURNING equipment_id, design_ct',
+            [Math.round(value * 100) / 100, equipmentId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Equipment not found' });
+        }
+
+        logger.info('Design CT updated: ' + equipmentId + ' = ' + result.rows[0].design_ct + 's');
+        res.json({ success: true, ...result.rows[0] });
+    } catch (error) {
+        logger.error('Error updating design CT:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// PUT /api/equipment/:equipmentId/csv-url
+app.put('/api/equipment/:equipmentId/csv-url', async (req, res) => {
+    try {
+        const { equipmentId } = req.params;
+        const { csv_url } = req.body;
+
+        if (!csv_url || typeof csv_url !== 'string' || csv_url.trim() === '') {
+            return res.status(400).json({ success: false, error: 'csv_url is required' });
+        }
+        if (!csv_url.startsWith('http://') && !csv_url.startsWith('https://')) {
+            return res.status(400).json({ success: false, error: 'csv_url must start with http:// or https://' });
+        }
+
+        const result = await pool.query(
+            'UPDATE equipment_design SET csv_url = $1 WHERE equipment_id = $2 RETURNING equipment_id, csv_url',
+            [csv_url.trim(), equipmentId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Equipment not found' });
+        }
+
+        logger.info('CSV URL updated: ' + equipmentId + ' = ' + result.rows[0].csv_url);
+        res.json({ success: true, ...result.rows[0] });
+    } catch (error) {
+        logger.error('Error updating CSV URL:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 // ==================== DATA FUNCTIONS ====================
 
 async function getMetrics() {
@@ -229,11 +291,11 @@ async function getVSMData() {
             em.samples_shift, em.stddev_shift, em.shift_name, em.last_serial, 
             em.last_scan_at, em.calculated_at,
             ed.equipment_name, ed.process_name, ed.design_ct, ed.target_oee, ed.is_parallel, ed.csv_url,
-            lp.process_order, lp.is_bottleneck
+            lp.process_order, lp.is_bottleneck, lp.parallel_group, lp.is_parallel as lp_is_parallel, lp.sub_line_group
         FROM equipment_metrics em
         LEFT JOIN equipment_design ed ON em.equipment_id = ed.equipment_id
         LEFT JOIN line_processes lp ON em.equipment_id = lp.equipment_id
-        ORDER BY lp.process_order, em.equipment_id
+        ORDER BY lp.process_order, lp.parallel_group NULLS FIRST, em.equipment_id
     `;
     const result = await pool.query(query);
     
@@ -245,8 +307,13 @@ async function getVSMData() {
                 process_name: processName,
                 process_order: row.process_order,
                 design_ct: row.design_ct,
+                has_parallel_lines: false,
+                sub_line_group: row.sub_line_group,
                 equipments: []
             };
+        }
+        if (row.lp_is_parallel) {
+            processes[processName].has_parallel_lines = true;
         }
         processes[processName].equipments.push(row);
     }

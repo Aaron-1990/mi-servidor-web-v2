@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -12,9 +12,72 @@
         .status { padding: 10px; background: #16213e; border-radius: 8px; margin-bottom: 20px; }
         .status.connected { border-left: 4px solid #00ff88; }
         .status.disconnected { border-left: 4px solid #ff4444; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
-        .process-card { background: #16213e; border-radius: 10px; padding: 15px; }
-        .process-name { font-size: 1.1em; font-weight: bold; color: #00d4ff; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .grid { display: flex; overflow-x: auto; gap: 0; padding: 10px 0; align-items: flex-start; }
+        .grid::-webkit-scrollbar { height: 8px; }
+        .grid::-webkit-scrollbar-track { background: #0a0a1a; }
+        .grid::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .process-step { display: flex; align-items: flex-start; flex-shrink: 0; }
+        .process-flow-arrow { display: flex; align-items: center; padding: 0 4px; color: #333; font-size: 1.5em; margin-top: 40px; }
+        .process-card { background: #16213e; border-radius: 10px; padding: 12px; min-width: 280px; max-width: 320px; flex-shrink: 0; }
+                .process-name { font-size: 0.95em; font-weight: bold; color: #00d4ff; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .process-step-num { background: #00d4ff; color: #0a0a1a; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75em; font-weight: bold; flex-shrink: 0; }
+        .process-equip-count { font-weight: normal; font-size: 0.75em; color: #666; margin-left: auto; }
+                .parallel-badge { font-size: 0.65em; color: #ffaa00; font-weight: normal; }
+
+        /* ==================== SUB-LINE CONTAINER ==================== */
+        .sub-line-container {
+            background: #1a1a3a;
+            border: 2px solid #2a2a5a;
+            border-radius: 12px;
+            padding: 10px;
+            flex-shrink: 0;
+            min-width: 600px;
+        }
+        .sub-line-header {
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #ffaa00;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub-line-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .sub-line-label {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            background: #252550;
+            color: #00d4ff;
+            font-size: 0.7em;
+            font-weight: bold;
+            padding: 8px 4px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+        }
+        .sub-line-arrow {
+            display: flex;
+            align-items: center;
+            color: #444;
+            font-size: 1em;
+            padding: 0 2px;
+            margin-top: 20px;
+        }
+        .sub-line-row .equipment {
+            min-width: 220px;
+            max-width: 240px;
+            font-size: 0.9em;
+        }
         .equipment { background: #0f0f23; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
         .equipment-name { font-weight: bold; color: #fff; margin-bottom: 5px; }
         .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.85em; }
@@ -205,6 +268,64 @@
             font-size: 0.9em;
             margin-top: 4px;
         }
+
+        /* ==================== DESIGN CT EDITABLE ==================== */
+        .design-ct-display {
+            display: inline-block;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            color: #aaa;
+            border-bottom: 1px dashed #555;
+            margin-top: 4px;
+        }
+        .design-ct-display:hover {
+            background: #252550;
+            color: #fff;
+        }
+        .design-ct-input {
+            width: 70px;
+            background: #1a1a30;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            font-size: 0.75em;
+            padding: 2px 6px;
+            border-radius: 3px;
+            outline: none;
+            margin-top: 4px;
+        }
+        .design-ct-saving { opacity: 0.5; pointer-events: none; }
+
+        /* ==================== CSV URL EDITABLE ==================== */
+        .csv-url-display {
+            display: block;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.65em;
+            color: #666;
+            border-bottom: 1px dashed #333;
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        .csv-url-display:hover { background: #252550; color: #aaa; }
+        .csv-url-input {
+            width: 100%;
+            box-sizing: border-box;
+            background: #1a1a30;
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            font-size: 0.65em;
+            padding: 3px 6px;
+            border-radius: 3px;
+            outline: none;
+            margin-top: 2px;
+        }
+        .csv-url-saving { opacity: 0.5; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -528,6 +649,7 @@
                 if (data.hours[i].total > maxCount) maxCount = data.hours[i].total;
             }
 
+            function fmtHour(h) { return h + '-' + ((h + 1) % 24); }
             var barsHtml = '';
             for (var i = 0; i < data.hours.length; i++) {
                 var h = data.hours[i];
@@ -539,7 +661,7 @@
                 var clickAttr = isEmpty ? '' : ' onclick="hourlyManager.toggleDrill(\'' + equipmentId + '\',' + h.hour + ')"';
 
                 barsHtml += '<div class="' + rowClass + '"' + clickAttr + '>'
-                    + '<span class="hourly-label">' + h.label + '</span>'
+                    + '<span class="hourly-label">' + fmtHour(h.hour) + '</span>'
                     + '<div class="hourly-bar-track">'
                     + '<div class="hourly-bar-ok" style="width:' + okWidth + '%"></div>'
                     + '<div class="hourly-bar-ng" style="width:' + ngWidth + '%"></div>'
@@ -551,7 +673,7 @@
 
             var t = data.totals;
             var peakText = t.peak_hour
-                ? 'Peak: ' + t.peak_hour.label + ' (' + t.peak_hour.count + ' pcs)'
+                ? 'Peak: ' + fmtHour(t.peak_hour.hour) + ' (' + t.peak_hour.count + ' pcs)'
                 : 'No production';
 
             container.innerHTML = '<div class="hourly-content">'
@@ -563,6 +685,162 @@
         };
 
         // ==================== INSTANTIATE ====================
+        // ==================== DESIGN CT INLINE EDIT ====================
+        var editingCT = null;  // equipment_id being edited, blocks WS re-render
+
+        function editDesignCT(equipmentId, currentValue) {
+            editingCT = equipmentId;
+            var span = document.getElementById('dct-' + equipmentId);
+            if (!span) return;
+            var input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'design-ct-input';
+            input.value = currentValue || '';
+            input.min = '0.01';
+            input.step = '0.01';
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') saveDesignCT(equipmentId, input);
+                if (e.key === 'Escape') { editingCT = null; input.replaceWith(span); }
+            };
+            input.onblur = function() { saveDesignCT(equipmentId, input); };
+            span.replaceWith(input);
+            input.focus();
+            input.select();
+        }
+
+        function saveDesignCT(equipmentId, input) {
+            var value = parseFloat(input.value);
+            if (!value || value <= 0) {
+                editingCT = null;
+                location.reload();
+                return;
+            }
+            input.classList.add('design-ct-saving');
+            fetch(API_BASE + '/api/equipment/' + equipmentId + '/design-ct', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ design_ct: value })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                editingCT = null;
+                if (data.success) {
+                    var span = document.createElement('span');
+                    span.className = 'design-ct-display';
+                    span.id = 'dct-' + equipmentId;
+                    span.onclick = function() { editDesignCT(equipmentId, data.design_ct); };
+                    span.textContent = 'Design: ' + data.design_ct + 's';
+                    input.replaceWith(span);
+                }
+            })
+            .catch(function() { editingCT = null; location.reload(); });
+        }
+
+        // ==================== CSV URL INLINE EDIT ====================
+        var editingURL = null;
+
+        function editCsvUrl(equipmentId, currentUrl) {
+            editingURL = equipmentId;
+            var div = document.getElementById('url-' + equipmentId);
+            if (!div) return;
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'csv-url-input';
+            input.value = currentUrl || '';
+            input.placeholder = 'http://...';
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') saveCsvUrl(equipmentId, input);
+                if (e.key === 'Escape') { editingURL = null; input.replaceWith(div); }
+            };
+            input.onblur = function() { saveCsvUrl(equipmentId, input); };
+            div.replaceWith(input);
+            input.focus();
+            input.select();
+        }
+
+        function saveCsvUrl(equipmentId, input) {
+            var url = input.value.trim();
+            if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+                editingURL = null;
+                location.reload();
+                return;
+            }
+            input.classList.add('csv-url-saving');
+            fetch(API_BASE + '/api/equipment/' + equipmentId + '/csv-url', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ csv_url: url })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                editingURL = null;
+                if (data.success) {
+                    var div = document.createElement('div');
+                    div.className = 'csv-url-display';
+                    div.id = 'url-' + equipmentId;
+                    div.title = data.csv_url;
+                    div.onclick = function() { editCsvUrl(equipmentId, data.csv_url); };
+                    div.textContent = 'URL: ' + data.csv_url.substring(data.csv_url.lastIndexOf('/') + 1);
+                    input.replaceWith(div);
+                }
+            })
+            .catch(function() { editingURL = null; location.reload(); });
+        }
+
+
+        // ==================== SUB-LINE GROUP RENDER ====================
+        function renderSubLineGroup(groupProcs) {
+            var lineCount = 0;
+            groupProcs.forEach(function(p) {
+                p.equipments.forEach(function(eq) {
+                    var pg = eq.parallel_group || 1;
+                    if (pg > lineCount) lineCount = pg;
+                });
+            });
+
+            var h = '<div class="process-step"><div class="sub-line-container">';
+            h += '<div class="sub-line-header">';
+            h += '<span class="process-step-num" style="background:#ffaa00">' + groupProcs[0].process_order + '-' + groupProcs[groupProcs.length-1].process_order + '</span>';
+            h += 'Automated Sub-Lines';
+            h += '<span class="process-equip-count">' + lineCount + ' lines x ' + groupProcs.length + ' processes</span>';
+            h += '</div>';
+
+            for (var line = 1; line <= lineCount; line++) {
+                h += '<div class="sub-line-row">';
+                h += '<div class="sub-line-label">Line ' + String.fromCharCode(64 + line) + '</div>';
+
+                groupProcs.forEach(function(proc, pidx) {
+                    if (pidx > 0) h += '<div class="sub-line-arrow">&#9654;</div>';
+                    var eq = null;
+                    proc.equipments.forEach(function(e) {
+                        if ((e.parallel_group || 1) === line) eq = e;
+                    });
+                    if (!eq) return;
+
+                    h += '<div class="equipment">';
+                    h += '<div class="equipment-name"><a href="' + eq.csv_url + '" target="_blank" style="color:#fff;text-decoration:none;border-bottom:1px dotted #555">' + (eq.equipment_name || eq.equipment_id) + '</a></div>';
+                    h += '<div class="metrics-row"><div class="metrics-row-label">CT Equipo</div><div class="metrics">';
+                    h += '<div class="metric"><div class="metric-label">RT</div><div class="metric-value realtime">' + fmt(eq.ct_equipo_realtime) + 's</div></div>';
+                    h += '<div class="metric"><div class="metric-label">1 Hour</div><div class="metric-value hour">' + fmt(eq.ct_equipo_hour) + 's</div></div>';
+                    h += '<div class="metric"><div class="metric-label">Shift</div><div class="metric-value shift">' + fmt(eq.ct_equipo_shift) + 's</div></div>';
+                    h += '</div></div>';
+                    h += '<div class="pieces"><span class="ok">' + eq.pieces_ok_shift + ' OK</span> / <span class="ng">' + eq.pieces_ng_shift + ' NG</span></div>';
+                    h += '<div class="csv-url-display" onclick="editCsvUrl(\x27' + eq.equipment_id + '\x27, \x27' + (eq.csv_url || '').replace(/'/g, "\\'") + '\x27)" id="url-' + eq.equipment_id + '" title="' + (eq.csv_url || 'No URL') + '">URL: ' + (eq.csv_url ? eq.csv_url.substring(eq.csv_url.lastIndexOf('/') + 1) : 'N/A') + '</div>';
+                    h += '<div><span class="design-ct-display" onclick="editDesignCT(\x27' + eq.equipment_id + '\x27, ' + (eq.design_ct || 0) + ')" id="dct-' + eq.equipment_id + '">Design: ' + (eq.design_ct ? eq.design_ct + 's' : 'N/A') + '</span></div>';
+                    h += '<div class="hourly-toggle" onclick="hourlyManager.toggle(\x27' + eq.equipment_id + '\x27)">';
+                    h += '<span class="hourly-arrow" id="arrow-' + eq.equipment_id + '">&#9654;</span>';
+                    h += 'Hourly Breakdown</div>';
+                    h += '<div class="hourly-container" id="hourly-' + eq.equipment_id + '"></div>';
+                    h += '</div>';
+                });
+
+                h += '</div>';
+            }
+
+            h += '</div></div>';
+            return h;
+        }
+
         var hourlyManager = new HourlyBreakdownManager(API_BASE);
 
         // ==================== SOCKET.IO ====================
@@ -584,6 +862,7 @@
         function fmt(val) { var n = parseFloat(val); return isNaN(n) ? '-' : n.toFixed(1); }
 
         socket.on('vsm-data', function(data) {
+            if (editingCT || editingURL) return;  // Skip re-render while editing
             var time = new Date(data.timestamp).toLocaleTimeString();
             statusEl.innerHTML = 'Connected - Shift: <strong>' + data.shift + '</strong> <span class="timestamp">Last update: ' + time + '</span>';
 
@@ -602,14 +881,31 @@
                 + '<div class="total-item"><div class="total-value">' + ((totalOK+totalNG)>0?((totalOK/(totalOK+totalNG))*100).toFixed(1):'0.0') + '%</div><div class="total-label">Yield</div></div>';
 
             var html = '';
-            data.processes.forEach(function(process) {
-                html += '<div class="process-card">';
-                html += '<div class="process-name">' + process.process_name + ' <span style="font-weight:normal;font-size:0.8em;color:#888">(Design: ' + process.design_ct + 's)</span></div>';
+            var procs = data.processes;
+            var i = 0;
+            while (i < procs.length) {
+                var process = procs[i];
+                // Check for sub-line group
+                if (process.sub_line_group) {
+                    var groupProcs = [];
+                    var groupName = process.sub_line_group;
+                    while (i < procs.length && procs[i].sub_line_group === groupName) {
+                        groupProcs.push(procs[i]);
+                        i++;
+                    }
+                    if (html !== '') html += '<div class="process-flow-arrow">&#9654;</div>';
+                    html += renderSubLineGroup(groupProcs);
+                    continue;
+                }
+                if (html !== '') html += '<div class="process-flow-arrow">&#9654;</div>';
+                html += '<div class="process-step"><div class="process-card">';
+                var eqCount = process.equipments.length;
+                var parallelTag = process.has_parallel_lines ? ' <span class="parallel-badge">[' + eqCount + ' parallel]</span>' : '';
+                html += '<div class="process-name"><span class="process-step-num">' + process.process_order + '</span>' + process.process_name + parallelTag + '<span class="process-equip-count">' + eqCount + ' eq</span></div>';
 
                 process.equipments.forEach(function(eq) {
                     html += '<div class="equipment">';
-                    html += '<div class="equipment-name">' + '<a href="' + eq.csv_url + '" target="_blank" style="color:#fff;text-decoration:none;border-bottom:1px dotted #555">' + (eq.equipment_name || eq.equipment_id) + '</a>' + '</div>';
-
+                    html += '<div class="equipment-name"><a href="' + eq.csv_url + '" target="_blank" style="color:#fff;text-decoration:none;border-bottom:1px dotted #555">' + (eq.equipment_name || eq.equipment_id) + '</a></div>';
                     html += '<div class="metrics-row"><div class="metrics-row-label">CT Equipo</div><div class="metrics">';
                     html += '<div class="metric"><div class="metric-label">RT</div><div class="metric-value realtime">' + fmt(eq.ct_equipo_realtime) + 's</div></div>';
                     html += '<div class="metric"><div class="metric-label">1 Hour</div><div class="metric-value hour">' + fmt(eq.ct_equipo_hour) + 's</div></div>';
@@ -623,17 +919,18 @@
                     html += '</div></div>';
 
                     html += '<div class="pieces">Pieces: <span class="ok">' + eq.pieces_ok_shift + ' OK</span> / <span class="ng">' + eq.pieces_ng_shift + ' NG</span> | Samples: ' + eq.samples_shift + '</div>';
+                    html += '<div class="csv-url-display" onclick="editCsvUrl(\'' + eq.equipment_id + '\', \'' + (eq.csv_url || '').replace(/'/g, "\\'" ) + '\')"  id="url-' + eq.equipment_id + '" title="' + (eq.csv_url || 'No URL') + '">URL: ' + (eq.csv_url ? eq.csv_url.substring(eq.csv_url.lastIndexOf('/') + 1) : 'N/A') + '</div>';
+                    html += '<div><span class="design-ct-display" onclick="editDesignCT(\'' + eq.equipment_id + '\', ' + (eq.design_ct || 0) + ')" id="dct-' + eq.equipment_id + '">Design: ' + (eq.design_ct ? eq.design_ct + 's' : 'N/A') + '</span></div>';
 
                     html += '<div class="hourly-toggle" onclick="hourlyManager.toggle(\'' + eq.equipment_id + '\')">';
                     html += '<span class="hourly-arrow" id="arrow-' + eq.equipment_id + '">&#9654;</span>';
                     html += 'Hourly Breakdown</div>';
                     html += '<div class="hourly-container" id="hourly-' + eq.equipment_id + '"></div>';
-
                     html += '</div>';
                 });
-
-                html += '</div>';
-            });
+                html += '</div></div>';
+                i++;
+            }
 
             // 1. Save scroll positions before destroying DOM
             hourlyManager.saveScrollPositions();
