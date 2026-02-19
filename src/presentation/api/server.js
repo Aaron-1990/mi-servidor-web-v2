@@ -26,6 +26,9 @@ const HourlyMetricsService = require('../../application/services/HourlyMetricsSe
 const ProductionLineRepository = require('../../infrastructure/repositories/ProductionLineRepository');
 const productionLineRepo = new ProductionLineRepository();
 
+const EquipmentDesignRepository = require('../../infrastructure/repositories/EquipmentDesignRepository');
+const equipmentRepo = new EquipmentDesignRepository();
+
 const hourlyMetricsRepo = new HourlyMetricsRepository(pool);
 const hourlyMetricsService = new HourlyMetricsService(hourlyMetricsRepo);
 
@@ -204,6 +207,12 @@ app.get('/monitor/:lineCode', (req, res) => {
     res.sendFile(path.join(__dirname, '..', '..', '..', 'public', 'monitor.html'));
 });
 
+    // Admin monitor - same page, admin mode detected by URL
+    app.get('/admin/monitor/:lineCode', (req, res) => {
+        const path = require('path');
+        res.sendFile(path.join(__dirname, '..', '..', '..', 'public', 'monitor.html'));
+    });
+
 // Serve admin page
 app.get('/admin', (req, res) => {
     const path = require('path');
@@ -306,6 +315,167 @@ app.put('/api/equipment/:equipmentId/csv-url', async (req, res) => {
     }
 });
 
+
+
+// ==================== EQUIPMENT CRUD ENDPOINTS (Feature 8) ====================
+
+// POST /api/equipment - Create new equipment (atomic 3-table transaction)
+app.post('/api/equipment', async (req, res) => {
+    try {
+        const data = req.body;
+
+        // Validation
+        var errors = [];
+        if (!data.equipment_id || !/^[A-Z0-9_]+$/.test(data.equipment_id)) {
+            errors.push("equipment_id required, uppercase alphanumeric + underscore only");
+        }
+        if (!data.equipment_name || data.equipment_name.length > 100) {
+            errors.push("equipment_name required, max 100 chars");
+        }
+        if (!data.process_name || !/^[A-Za-z0-9_ ]+$/.test(data.process_name)) {
+            errors.push("process_name required");
+        }
+        if (data.design_ct === undefined || parseFloat(data.design_ct) <= 0) {
+            errors.push("design_ct must be a positive number");
+        }
+        if (!data.equipment_type || !["BREQ_BCMP", "BCMP_ONLY"].includes(data.equipment_type)) {
+            errors.push("equipment_type must be BREQ_BCMP or BCMP_ONLY");
+        }
+        if (!data.line_id) {
+            errors.push("line_id is required");
+        }
+        if (!data.process_order || parseInt(data.process_order) < 1) {
+            errors.push("process_order must be a positive integer");
+        }
+        if (data.is_parallel && (data.parallel_group === undefined || data.parallel_group === null)) {
+            errors.push("parallel_group required for parallel equipment");
+        }
+        if (data.target_oee !== undefined && (data.target_oee < 0 || data.target_oee > 100)) {
+            errors.push("target_oee must be 0-100");
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({ success: false, error: "Validation failed", details: errors });
+        }
+
+        // Check uniqueness
+        var existing = await equipmentRepo.validateEquipmentId(data.equipment_id);
+        if (existing.exists) {
+            return res.status(409).json({ success: false, error: "Equipment ID already exists: " + data.equipment_id });
+        }
+
+        // Normalize numeric fields
+        data.design_ct = parseFloat(data.design_ct);
+        data.line_id = parseInt(data.line_id);
+        data.process_order = parseInt(data.process_order);
+        data.is_parallel = !!data.is_parallel;
+        if (data.parallel_group !== undefined && data.parallel_group !== null) {
+            data.parallel_group = parseInt(data.parallel_group);
+        }
+
+        var result = await equipmentRepo.createEquipment(data);
+        logger.info("Equipment created via API: " + data.equipment_id);
+        res.status(201).json(result);
+
+    } catch (error) {
+        logger.error("Error creating equipment: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// PUT /api/equipment/:equipmentId - Update equipment
+app.put('/api/equipment/:equipmentId', async (req, res) => {
+    try {
+        var equipmentId = req.params.equipmentId;
+        var data = req.body;
+
+        // Verify equipment exists
+        var check = await equipmentRepo.validateEquipmentId(equipmentId);
+        if (!check.exists) {
+            return res.status(404).json({ success: false, error: "Equipment not found: " + equipmentId });
+        }
+
+        // Normalize if present
+        if (data.design_ct !== undefined) data.design_ct = parseFloat(data.design_ct);
+        if (data.process_order !== undefined) data.process_order = parseInt(data.process_order);
+        if (data.parallel_group !== undefined && data.parallel_group !== null) {
+            data.parallel_group = parseInt(data.parallel_group);
+        }
+
+        var result = await equipmentRepo.updateEquipment(equipmentId, data);
+        logger.info("Equipment updated via API: " + equipmentId);
+        res.json(result);
+
+    } catch (error) {
+        logger.error("Error updating equipment: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// PUT /api/equipment/:equipmentId/status - Toggle active/inactive
+app.put('/api/equipment/:equipmentId/status', async (req, res) => {
+    try {
+        var equipmentId = req.params.equipmentId;
+        var isActive = req.body.is_active;
+
+        if (typeof isActive !== "boolean") {
+            return res.status(400).json({ success: false, error: "is_active must be a boolean" });
+        }
+
+        var result = await equipmentRepo.setEquipmentStatus(equipmentId, isActive);
+        logger.info("Equipment status changed: " + equipmentId + " -> " + isActive);
+        res.json(result);
+
+    } catch (error) {
+        if (error.message.includes("not found")) {
+            return res.status(404).json({ success: false, error: error.message });
+        }
+        logger.error("Error toggling equipment status: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// GET /api/equipment - List all equipment (optional filter by line_id)
+app.get('/api/equipment', async (req, res) => {
+    try {
+        var lineId = req.query.line_id ? parseInt(req.query.line_id) : null;
+        var rows = await equipmentRepo.getAllEquipment(lineId);
+        res.json({ success: true, equipment: rows, count: rows.length });
+    } catch (error) {
+        logger.error("Error listing equipment: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// GET /api/processes - Distinct process names (optional filter by line_code)
+app.get('/api/processes', async (req, res) => {
+    try {
+        var lineCode = req.query.line_code || null;
+        var processes = await equipmentRepo.getProcesses(lineCode);
+        res.json({ success: true, processes: processes });
+    } catch (error) {
+        logger.error("Error listing processes: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// POST /api/equipment/test-url - Test CSV URL connectivity
+app.post('/api/equipment/test-url', async (req, res) => {
+    try {
+        var url = req.body.url;
+        if (!url || typeof url !== "string") {
+            return res.status(400).json({ success: false, error: "url is required" });
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            return res.status(400).json({ success: false, error: "url must start with http:// or https://" });
+        }
+        var result = await equipmentRepo.testCsvUrl(url);
+        res.json({ success: true, ...result });
+    } catch (error) {
+        logger.error("Error testing CSV URL: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 // ==================== DATA FUNCTIONS ====================
 

@@ -326,6 +326,11 @@
             margin-top: 2px;
         }
         .csv-url-saving { opacity: 0.5; pointer-events: none; }
+
+        /* === Admin/User Mode (Feature 8) === */
+        .viewer-mode .csv-url-display { display: none !important; }
+        .viewer-mode .design-ct-display { cursor: default !important; }
+        .viewer-mode .equipment-name a { pointer-events: none; border-bottom-color: transparent !important; cursor: default; text-decoration: none !important; }
     </style>
 </head>
 <body>
@@ -336,10 +341,19 @@
 
     <script>
         var API_BASE = window.location.origin;
-        var lineCode = window.location.pathname.split("/")[2] || "GPEC5_L1";
+        var pathParts = window.location.pathname.split("/");
+        var isAdmin = pathParts[1] === "admin";
+        var lineCode = isAdmin ? (pathParts[3] || "GPEC5_L1") : (pathParts[2] || "GPEC5_L1");
+        if (!isAdmin) document.body.classList.add("viewer-mode");
         var lineDisplay = decodeURIComponent(lineCode);
         document.getElementById('line-title').textContent = 'VSM Monitor - ' + lineDisplay;
         document.title = 'VSM ' + lineDisplay + ' - Monitor';
+        if (isAdmin) {
+            var backLink = document.querySelector("a[href='/']");
+            if (backLink) backLink.href = "/admin";
+            document.getElementById('line-title').textContent = 'VSM Admin Monitor - ' + lineDisplay;
+            document.title = 'VSM ' + lineDisplay + ' - Admin Monitor';
+        }
 
         // ==================== HOURLY BREAKDOWN MANAGER ====================
 
@@ -693,6 +707,7 @@
         // Inline editing removed - monitor is read-only
 
         function editDesignCT(equipmentId, currentValue) {
+            if (!isAdmin) return;
             editingCT = equipmentId;
             var span = document.getElementById('dct-' + equipmentId);
             if (!span) return;
@@ -744,6 +759,7 @@
         
 
         function editCsvUrl(equipmentId, currentUrl) {
+            if (!isAdmin) return;
             editingURL = equipmentId;
             var div = document.getElementById('url-' + equipmentId);
             if (!div) return;

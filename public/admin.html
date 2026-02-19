@@ -28,6 +28,57 @@
         .monitor-link { color: #38bdf8; text-decoration: none; font-size: 0.85rem; }
         .monitor-link:hover { text-decoration: underline; }
         .placeholder { color: #64748b; text-align: center; padding: 60px; font-size: 1rem; font-style: italic; }
+        /* === Feature 8: Equipment Tab Styles === */
+        .eq-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .eq-toolbar select, .eq-toolbar input { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; }
+        .eq-toolbar select { min-width: 160px; }
+        .eq-toolbar input { flex: 1; min-width: 200px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+        .btn-primary { background: #f59e0b; color: #0f172a; }
+        .btn-primary:hover { background: #fbbf24; }
+        .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+        .btn-success { background: #22c55e; color: #fff; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-secondary { background: #334155; color: #e2e8f0; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-test { background: #6366f1; color: #fff; }
+        .btn-test:hover { background: #818cf8; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .eq-count { color: #94a3b8; font-size: 0.85rem; margin-left: auto; }
+        .eq-type { font-size: 0.75rem; padding: 2px 8px; border-radius: 3px; font-family: monospace; }
+        .eq-type-breq { background: #1e3a5f; color: #38bdf8; }
+        .eq-type-bcmp { background: #3b1f1f; color: #fb923c; }
+        .eq-parallel { font-size: 0.75rem; color: #a78bfa; }
+        .toggle { cursor: pointer; font-weight: 600; }
+        .toggle-on { color: #22c55e; }
+        .toggle-off { color: #ef4444; }
+        .actions-cell { display: flex; gap: 6px; }
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: flex-start; padding-top: 60px; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #1e293b; border: 1px solid #334155; border-radius: 8px; width: 520px; max-height: 80vh; overflow-y: auto; padding: 24px; }
+        .modal h3 { margin-bottom: 20px; font-size: 1.1rem; color: #f59e0b; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; }
+        .form-group input, .form-group select { width: 100%; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; padding: 8px 12px; border-radius: 4px; font-size: 0.9rem; }
+        .form-group input:focus, .form-group select:focus { border-color: #f59e0b; outline: none; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .form-hint { font-size: 0.75rem; color: #64748b; margin-top: 3px; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #334155; }
+        .radio-group { display: flex; gap: 16px; margin-top: 4px; }
+        .radio-group label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #e2e8f0; cursor: pointer; text-transform: none; }
+        .tooltip-icon { display: inline-block; width: 16px; height: 16px; background: #334155; color: #94a3b8; border-radius: 50%; text-align: center; font-size: 0.7rem; line-height: 16px; cursor: help; position: relative; }
+        .tooltip-icon:hover::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #0f172a; color: #e2e8f0; padding: 8px 12px; border-radius: 4px; font-size: 0.75rem; white-space: nowrap; border: 1px solid #334155; z-index: 10; max-width: 320px; white-space: normal; }
+        .url-test-row { display: flex; gap: 8px; align-items: flex-start; }
+        .url-test-row input { flex: 1; }
+        .test-result { font-size: 0.8rem; margin-top: 4px; padding: 4px 8px; border-radius: 3px; }
+        .test-ok { background: #14532d; color: #4ade80; }
+        .test-fail { background: #450a0a; color: #fca5a5; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 6px; font-size: 0.85rem; z-index: 2000; animation: fadeIn 0.3s; }
+        .toast-success { background: #14532d; color: #4ade80; border: 1px solid #22c55e; }
+        .toast-error { background: #450a0a; color: #fca5a5; border: 1px solid #ef4444; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -51,7 +102,95 @@
             </table>
         </div>
         <div id="panel-equipment" class="tab-panel">
-            <div class="placeholder">Equipment management - Coming in Feature 8</div>
+            <h2 style="font-size:1.1rem; margin-bottom:12px;">Equipment Management</h2>
+            <div class="eq-toolbar">
+                <select id="eq-filter-line" onchange="loadEquipment()"><option value="">All Lines</option></select>
+                <select id="eq-filter-process" onchange="filterTable()"><option value="">All Processes</option></select>
+                <input type="text" id="eq-search" placeholder="Search by ID or name..." oninput="filterTable()">
+                <span class="eq-count" id="eq-count"></span>
+                <button class="btn btn-primary" onclick="openModal()">+ New Equipment</button>
+            </div>
+            <table>
+                <thead><tr>
+                    <th>ID</th><th>Name</th><th>Process</th><th>Type</th><th>Design CT</th><th>Parallel</th><th>Order</th><th>Status</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="equipment-table"></tbody>
+            </table>
+
+            <!-- Modal -->
+            <div class="modal-overlay" id="eq-modal">
+                <div class="modal">
+                    <h3 id="modal-title">New Equipment</h3>
+                    <div class="form-group">
+                        <label>Line</label>
+                        <select id="f-line-id"></select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Equipment ID</label>
+                            <input type="text" id="f-eq-id" placeholder="e.g. LEAKTEST_03" style="text-transform:uppercase">
+                            <div class="form-hint">Uppercase, alphanumeric + underscore</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="f-eq-name" placeholder="e.g. Leak Test Station 3">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Process</label>
+                            <select id="f-process"></select>
+                            <div class="form-hint">Select existing or type new in ID</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Design CT (sec)</label>
+                            <input type="number" id="f-design-ct" step="0.01" min="0.01" placeholder="e.g. 25.5">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipment Type <span class="tooltip-icon" data-tip="BREQ+BCMP: Entry and exit events. CT = BCMP - BREQ of same serial. BCMP Only: Completion event only. CT = throughput over 30-piece buffer.">?</span></label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="f-eq-type" value="BREQ_BCMP" checked> BREQ + BCMP</label>
+                            <label><input type="radio" name="f-eq-type" value="BCMP_ONLY"> BCMP Only</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>CSV URL</label>
+                        <div class="url-test-row">
+                            <input type="text" id="f-csv-url" placeholder="http://10.3.x.x/...">
+                            <button class="btn btn-test btn-sm" onclick="testUrl()" id="btn-test-url">Test</button>
+                        </div>
+                        <div id="url-test-result"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Process Order</label>
+                            <input type="number" id="f-order" min="1" placeholder="e.g. 8">
+                        </div>
+                        <div class="form-group">
+                            <label>Target OEE (%)</label>
+                            <input type="number" id="f-target-oee" min="0" max="100" value="85">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><input type="checkbox" id="f-is-parallel"> Parallel Equipment</label>
+                        </div>
+                        <div class="form-group" id="parallel-fields" style="display:none">
+                            <label>Parallel Group</label>
+                            <input type="number" id="f-parallel-group" min="0" placeholder="e.g. 3">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Sub-Line Group</label>
+                        <input type="text" id="f-sub-line" placeholder="e.g. AUTO_LINE (optional)">
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary" id="btn-save" onclick="saveEquipment()">Save</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div id="panel-reports" class="tab-panel">
             <div class="placeholder">Historical reports - Coming in Feature 5</div>
@@ -82,10 +221,273 @@
                         "<td>" + l.target_output + "</td>" +
                         "<td>" + l.equipment_count + "</td>" +
                         "<td class=" + (l.is_active ? "badge-on" : "badge-off") + ">" + (l.is_active ? "ON" : "OFF") + "</td>" +
-                        "<td><a href=/monitor/" + l.line_code + " class=monitor-link>View &rarr;</a></td>" +
+                        "<td><a href=/admin/monitor/" + l.line_code + " class=monitor-link>View &rarr;</a></td>" +
                     "</tr>";
                 }).join("");
             });
+
+        // === Feature 8: Equipment CRUD ===
+        var allEquipment = [];
+        var editingId = null;
+
+        function loadEquipment() {
+            var lineId = document.getElementById("eq-filter-line").value;
+            var url = API_BASE + "/api/equipment";
+            if (lineId) url += "?line_id=" + lineId;
+            fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+                if (!data.success) return;
+                allEquipment = data.equipment;
+                populateProcessFilter(allEquipment);
+                filterTable();
+            });
+        }
+
+        function populateProcessFilter(equipment) {
+            var procs = [];
+            equipment.forEach(function(e) {
+                if (procs.indexOf(e.process_name) === -1) procs.push(e.process_name);
+            });
+            procs.sort();
+            var sel = document.getElementById("eq-filter-process");
+            var cur = sel.value;
+            sel.innerHTML = "<option value=\"\">All Processes</option>" + procs.map(function(p) {
+                return "<option value=\"" + p + "\">" + p + "</option>";
+            }).join("");
+            sel.value = cur;
+        }
+
+        function filterTable() {
+            var proc = document.getElementById("eq-filter-process").value;
+            var search = document.getElementById("eq-search").value.toLowerCase();
+            var filtered = allEquipment.filter(function(e) {
+                if (proc && e.process_name !== proc) return false;
+                if (search && e.equipment_id.toLowerCase().indexOf(search) === -1 && e.equipment_name.toLowerCase().indexOf(search) === -1) return false;
+                return true;
+            });
+            document.getElementById("eq-count").textContent = filtered.length + " of " + allEquipment.length + " equipment";
+            renderTable(filtered);
+        }
+
+        function renderTable(equipment) {
+            var tbody = document.getElementById("equipment-table");
+            if (equipment.length === 0) {
+                tbody.innerHTML = "<tr><td colspan=9 style=\"text-align:center;color:#64748b;padding:40px\">No equipment found</td></tr>";
+                return;
+            }
+            tbody.innerHTML = equipment.map(function(e) {
+                var typeClass = e.equipment_type === "BREQ_BCMP" ? "eq-type-breq" : "eq-type-bcmp";
+                var typeLabel = e.equipment_type === "BREQ_BCMP" ? "BREQ+BCMP" : "BCMP Only";
+                var statusClass = e.is_active ? "toggle-on" : "toggle-off";
+                var statusText = e.is_active ? "ON" : "OFF";
+                var parallel = e.is_parallel ? "G" + (e.parallel_group || "?") : "-";
+                return "<tr>" +
+                    "<td style=\"font-family:monospace;font-size:0.8rem\">" + e.equipment_id + "</td>" +
+                    "<td>" + e.equipment_name + "</td>" +
+                    "<td>" + e.process_name + "</td>" +
+                    "<td><span class=\"eq-type " + typeClass + "\">" + typeLabel + "</span></td>" +
+                    "<td>" + parseFloat(e.design_ct) + "s</td>" +
+                    "<td class=eq-parallel>" + parallel + "</td>" +
+                    "<td>" + (e.process_order || "-") + "</td>" +
+                    "<td><span class=\"toggle " + statusClass + "\" onclick=\"toggleStatus('" + e.equipment_id + "'," + !e.is_active + ")\" style=cursor:pointer>" + statusText + "</span></td>" +
+                    "<td class=actions-cell><button class=\"btn btn-secondary btn-sm\" onclick=\"openEdit('" + e.equipment_id + "')\">Edit</button></td>" +
+                "</tr>";
+            }).join("");
+        }
+
+        function toggleStatus(eqId, newStatus) {
+            fetch(API_BASE + "/api/equipment/" + eqId + "/status", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ is_active: newStatus })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) {
+                    showToast(eqId + " " + (newStatus ? "activated" : "deactivated"), "success");
+                    loadEquipment();
+                } else {
+                    showToast("Error: " + data.error, "error");
+                }
+            });
+        }
+
+        // --- Modal ---
+        function openModal() {
+            editingId = null;
+            document.getElementById("modal-title").textContent = "New Equipment";
+            document.getElementById("f-eq-id").value = "";
+            document.getElementById("f-eq-id").removeAttribute("disabled");
+            document.getElementById("f-eq-name").value = "";
+            document.getElementById("f-design-ct").value = "";
+            document.getElementById("f-csv-url").value = "";
+            document.getElementById("f-order").value = "";
+            document.getElementById("f-target-oee").value = "85";
+            document.getElementById("f-is-parallel").checked = false;
+            document.getElementById("f-parallel-group").value = "";
+            document.getElementById("f-sub-line").value = "";
+            document.getElementById("parallel-fields").style.display = "none";
+            document.getElementById("url-test-result").innerHTML = "";
+            document.querySelector("input[name=f-eq-type][value=BREQ_BCMP]").checked = true;
+            loadModalDropdowns();
+            document.getElementById("eq-modal").classList.add("active");
+        }
+
+        function openEdit(eqId) {
+            var eq = allEquipment.find(function(e) { return e.equipment_id === eqId; });
+            if (!eq) return;
+            editingId = eqId;
+            document.getElementById("modal-title").textContent = "Edit: " + eqId;
+            document.getElementById("f-eq-id").value = eq.equipment_id;
+            document.getElementById("f-eq-id").setAttribute("disabled", "disabled");
+            document.getElementById("f-eq-name").value = eq.equipment_name;
+            document.getElementById("f-design-ct").value = parseFloat(eq.design_ct);
+            document.getElementById("f-csv-url").value = eq.csv_url || "";
+            document.getElementById("f-order").value = eq.process_order || "";
+            document.getElementById("f-target-oee").value = parseFloat(eq.target_oee) || 85;
+            document.getElementById("f-is-parallel").checked = eq.is_parallel;
+            document.getElementById("f-parallel-group").value = eq.parallel_group || "";
+            document.getElementById("f-sub-line").value = eq.sub_line_group || "";
+            document.getElementById("parallel-fields").style.display = eq.is_parallel ? "block" : "none";
+            document.getElementById("url-test-result").innerHTML = "";
+            var typeVal = eq.equipment_type || "BREQ_BCMP";
+            var radio = document.querySelector("input[name=f-eq-type][value=" + typeVal + "]");
+            if (radio) radio.checked = true;
+            loadModalDropdowns(eq);
+            document.getElementById("eq-modal").classList.add("active");
+        }
+
+        function closeModal() {
+            document.getElementById("eq-modal").classList.remove("active");
+            editingId = null;
+        }
+
+        function loadModalDropdowns(eq) {
+            // Lines dropdown
+            fetch(API_BASE + "/api/lines").then(function(r) { return r.json(); }).then(function(data) {
+                if (!data.success) return;
+                var sel = document.getElementById("f-line-id");
+                sel.innerHTML = data.lines.map(function(l) {
+                    return "<option value=\"" + l.id + "\">" + l.line_code + " - " + l.line_name + "</option>";
+                }).join("");
+                if (eq && eq.line_id) sel.value = eq.line_id;
+            });
+            // Processes dropdown
+            fetch(API_BASE + "/api/processes").then(function(r) { return r.json(); }).then(function(data) {
+                if (!data.success) return;
+                var sel = document.getElementById("f-process");
+                sel.innerHTML = "<option value=\"\">-- Select or type new --</option>"
+                    + data.processes.map(function(p) {
+                        return "<option value=\"" + p + "\">" + p + "</option>";
+                    }).join("");
+                if (eq && eq.process_name) sel.value = eq.process_name;
+            });
+        }
+
+        // Parallel checkbox toggle
+        document.getElementById("f-is-parallel").addEventListener("change", function() {
+            document.getElementById("parallel-fields").style.display = this.checked ? "block" : "none";
+        });
+
+        // --- Save ---
+        function saveEquipment() {
+            var eqType = document.querySelector("input[name=f-eq-type]:checked").value;
+            var isParallel = document.getElementById("f-is-parallel").checked;
+
+            var payload = {
+                equipment_name: document.getElementById("f-eq-name").value.trim(),
+                process_name: document.getElementById("f-process").value,
+                csv_url: document.getElementById("f-csv-url").value.trim() || null,
+                design_ct: parseFloat(document.getElementById("f-design-ct").value),
+                equipment_type: eqType,
+                target_oee: parseFloat(document.getElementById("f-target-oee").value) || 85,
+                is_parallel: isParallel,
+                process_order: parseInt(document.getElementById("f-order").value),
+                parallel_group: isParallel ? parseInt(document.getElementById("f-parallel-group").value) : null,
+                sub_line_group: document.getElementById("f-sub-line").value.trim() || null
+            };
+
+            var url, method;
+            if (editingId) {
+                url = API_BASE + "/api/equipment/" + editingId;
+                method = "PUT";
+            } else {
+                payload.equipment_id = document.getElementById("f-eq-id").value.trim().toUpperCase();
+                payload.line_id = parseInt(document.getElementById("f-line-id").value);
+                url = API_BASE + "/api/equipment";
+                method = "POST";
+            }
+
+            document.getElementById("btn-save").disabled = true;
+            document.getElementById("btn-save").textContent = "Saving...";
+
+            fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                document.getElementById("btn-save").disabled = false;
+                document.getElementById("btn-save").textContent = "Save";
+                if (data.success) {
+                    showToast((editingId ? "Updated" : "Created") + ": " + (payload.equipment_id || editingId), "success");
+                    closeModal();
+                    loadEquipment();
+                } else {
+                    var msg = data.error;
+                    if (data.details) msg += " - " + data.details.join(", ");
+                    showToast(msg, "error");
+                }
+            }).catch(function(err) {
+                document.getElementById("btn-save").disabled = false;
+                document.getElementById("btn-save").textContent = "Save";
+                showToast("Network error: " + err.message, "error");
+            });
+        }
+
+        // --- Test URL ---
+        function testUrl() {
+            var url = document.getElementById("f-csv-url").value.trim();
+            if (!url) { showToast("Enter a URL first", "error"); return; }
+            document.getElementById("btn-test-url").disabled = true;
+            document.getElementById("btn-test-url").textContent = "Testing...";
+            document.getElementById("url-test-result").innerHTML = "";
+            fetch(API_BASE + "/api/equipment/test-url", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: url })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                document.getElementById("btn-test-url").disabled = false;
+                document.getElementById("btn-test-url").textContent = "Test";
+                var el = document.getElementById("url-test-result");
+                if (data.reachable && data.hasData) {
+                    el.innerHTML = "<div class=\"test-result test-ok\">Reachable - CSV data found</div>";
+                } else if (data.reachable) {
+                    el.innerHTML = "<div class=\"test-result test-fail\">Reachable but no CSV data (no xmp tags)</div>";
+                } else {
+                    el.innerHTML = "<div class=\"test-result test-fail\">Not reachable: " + (data.error || "Unknown error") + "</div>";
+                }
+            }).catch(function() {
+                document.getElementById("btn-test-url").disabled = false;
+                document.getElementById("btn-test-url").textContent = "Test";
+                document.getElementById("url-test-result").innerHTML = "<div class=\"test-result test-fail\">Network error</div>";
+            });
+        }
+
+        // --- Toast ---
+        function showToast(msg, type) {
+            var div = document.createElement("div");
+            div.className = "toast toast-" + type;
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(function() { div.remove(); }, 4000);
+        }
+
+        // --- Init: Load line filter + equipment on tab click ---
+        fetch(API_BASE + "/api/lines").then(function(r) { return r.json(); }).then(function(data) {
+            if (!data.success) return;
+            var sel = document.getElementById("eq-filter-line");
+            sel.innerHTML = "<option value=\"\">All Lines</option>" + data.lines.map(function(l) {
+                return "<option value=\"" + l.id + "\">" + l.line_code + "</option>";
+            }).join("");
+        });
+        loadEquipment();
     </script>
 </body>
 </html>
