@@ -17,6 +17,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { pool } = require('../../../config/database');
 const logger = require('../../../config/logger');
+const { ipFilterMiddleware } = require('../../../config/security');
 
 // Hourly Metrics - Repository + Service (Dependency Injection)
 const HourlyMetricsRepository = require('../../infrastructure/repositories/HourlyMetricsRepository');
@@ -42,9 +43,31 @@ const io = new Server(server, {
 const PORT = process.env.API_PORT || 3000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.socket.io"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            connectSrc: ["'self'", "ws://localhost:3000", "http://localhost:3000", "ws://10.3.0.200:3000", "http://10.3.0.200:3000"]
+        },
+        useDefaults: false
+    },
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    originAgentCluster: false
+}));
+app.use(function(req, res, next) {
+    res.removeHeader('Content-Security-Policy-Report-Only');
+    next();
+});
 app.use(cors());
 app.use(express.json());
+app.use(ipFilterMiddleware);
+
+// Serve static files (public folder)
+var path = require('path');
+app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
 // ==================== REST ENDPOINTS ====================
 

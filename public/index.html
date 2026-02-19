@@ -335,7 +335,7 @@
     <div id="grid" class="grid"></div>
 
     <script>
-        var API_BASE = 'http://localhost:3000';
+        var API_BASE = window.location.origin;
 
         // ==================== HOURLY BREAKDOWN MANAGER ====================
 
@@ -823,6 +823,11 @@
                     h += '<div class="metric"><div class="metric-label">RT</div><div class="metric-value realtime">' + fmt(eq.ct_equipo_realtime) + 's</div></div>';
                     h += '<div class="metric"><div class="metric-label">1 Hour</div><div class="metric-value hour">' + fmt(eq.ct_equipo_hour) + 's</div></div>';
                     h += '<div class="metric"><div class="metric-label">Shift</div><div class="metric-value shift">' + fmt(eq.ct_equipo_shift) + 's</div></div>';
+                    h += '</div></div>';
+                    h += '<div class="metrics-row"><div class="metrics-row-label">CT Proceso</div><div class="metrics">';
+                    h += '<div class="metric"><div class="metric-label">RT</div><div class="metric-value realtime">' + fmt(eq.ct_proceso_realtime) + 's</div></div>';
+                    h += '<div class="metric"><div class="metric-label">1 Hour</div><div class="metric-value hour">' + fmt(eq.ct_proceso_hour) + 's</div></div>';
+                    h += '<div class="metric"><div class="metric-label">Shift</div><div class="metric-value shift">' + fmt(eq.ct_proceso_shift) + 's</div></div>';
                     h += '</div></div>';
                     h += '<div class="pieces"><span class="ok">' + eq.pieces_ok_shift + ' OK</span> / <span class="ng">' + eq.pieces_ng_shift + ' NG</span></div>';
                     h += '<div class="csv-url-display" onclick="editCsvUrl(\x27' + eq.equipment_id + '\x27, \x27' + (eq.csv_url || '').replace(/'/g, "\\'") + '\x27)" id="url-' + eq.equipment_id + '" title="' + (eq.csv_url || 'No URL') + '">URL: ' + (eq.csv_url ? eq.csv_url.substring(eq.csv_url.lastIndexOf('/') + 1) : 'N/A') + '</div>';
