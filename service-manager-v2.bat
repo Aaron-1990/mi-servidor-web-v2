@@ -5,7 +5,7 @@ color 0A
 :MENU
 cls
 echo ============================================================
-echo        GESTOR DE SERVICIOS VSM v2 - BORGWARNER GPEC5
+echo        GESTOR DE SERVICIOS VSM v2 - BORGWARNER
 echo ============================================================
 echo.
 echo  [1] Ver estado de los 3 servicios

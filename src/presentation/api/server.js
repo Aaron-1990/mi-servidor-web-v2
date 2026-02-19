@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VSM Server con API REST + WebSocket
  * 
  * REST Endpoints:
@@ -22,6 +22,9 @@ const { ipFilterMiddleware } = require('../../../config/security');
 // Hourly Metrics - Repository + Service (Dependency Injection)
 const HourlyMetricsRepository = require('../../infrastructure/repositories/HourlyMetricsRepository');
 const HourlyMetricsService = require('../../application/services/HourlyMetricsService');
+
+const ProductionLineRepository = require('../../infrastructure/repositories/ProductionLineRepository');
+const productionLineRepo = new ProductionLineRepository();
 
 const hourlyMetricsRepo = new HourlyMetricsRepository(pool);
 const hourlyMetricsService = new HourlyMetricsService(hourlyMetricsRepo);
@@ -195,6 +198,44 @@ app.get('/api/summary', async (req, res) => {
     }
 });
 
+// Serve monitor page for any line
+app.get('/monitor/:lineCode', (req, res) => {
+    const path = require('path');
+    res.sendFile(path.join(__dirname, '..', '..', '..', 'public', 'monitor.html'));
+});
+
+// Serve admin page
+app.get('/admin', (req, res) => {
+    const path = require('path');
+    res.sendFile(path.join(__dirname, '..', '..', '..', 'public', 'admin.html'));
+});
+
+// GET /api/lines - List active production lines
+app.get('/api/lines', async (req, res) => {
+    try {
+        const lines = await productionLineRepo.getActiveLines();
+        const linesWithCount = await Promise.all(lines.map(async (line) => {
+            const equipCount = await productionLineRepo.getEquipmentCount(line.id);
+            return { ...line, equipment_count: equipCount };
+        }));
+        res.json({ success: true, lines: linesWithCount });
+    } catch (error) {
+        logger.error('Error fetching lines: ' + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// GET /api/vsm/:lineCode - VSM data filtered by production line
+app.get('/api/vsm/:lineCode', async (req, res) => {
+    try {
+        const data = await getVSMData(req.params.lineCode);
+        res.json({ success: true, timestamp: new Date().toISOString(), ...data });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// GET /api/vsm - backward compatible (defaults to GPEC5_L1)
 app.get('/api/vsm', async (req, res) => {
     try {
         const data = await getVSMData();
@@ -275,7 +316,7 @@ async function getMetrics() {
         LEFT JOIN equipment_design ed ON em.equipment_id = ed.equipment_id
         ORDER BY ed.process_name, em.equipment_id
     `;
-    const result = await pool.query(query);
+    const result = await pool.query(query, [lineCode || null]);
     return result.rows;
 }
 
@@ -306,7 +347,7 @@ async function getSummary() {
     return { totals, processes: result.rows };
 }
 
-async function getVSMData() {
+async function getVSMData(lineCode) {
     const query = `
         SELECT 
             em.equipment_id, em.ct_equipo_realtime, em.ct_proceso_realtime,
@@ -353,6 +394,11 @@ io.on('connection', (socket) => {
         socket.emit('vsm-data', { timestamp: new Date().toISOString(), ...data });
     });
     
+    socket.on('join-line', function(lineCode) {
+        socket.join('line:' + lineCode);
+        logger.info('Socket ' + socket.id + ' joined room line:' + lineCode);
+    });
+
     socket.on('disconnect', () => {
         logger.info(`WebSocket client disconnected: ${socket.id}`);
     });
@@ -421,4 +467,6 @@ server.listen(PORT, () => {
 });
 
 module.exports = { app, io };
+
+
 

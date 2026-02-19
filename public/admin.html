@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSM Admin Panel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+        .header { background: #1e293b; padding: 16px 40px; border-bottom: 2px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .header-left { display: flex; align-items: center; gap: 16px; }
+        .header-left a { color: #94a3b8; text-decoration: none; font-size: 1.2rem; }
+        .header-left h1 { font-size: 1.3rem; color: #f8fafc; }
+        .header-left h1 span { color: #f59e0b; }
+        .tabs { display: flex; background: #1e293b; border-bottom: 1px solid #334155; padding: 0 40px; }
+        .tab { padding: 12px 24px; color: #94a3b8; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; font-size: 0.9rem; }
+        .tab:hover { color: #e2e8f0; background: #334155; }
+        .tab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+        .content { padding: 30px 40px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th { text-align: left; padding: 10px 12px; background: #1e293b; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid #334155; }
+        td { padding: 10px 12px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
+        tr:hover { background: #1e293b; }
+        .badge-on { color: #22c55e; font-weight: 600; }
+        .badge-off { color: #ef4444; font-weight: 600; }
+        .monitor-link { color: #38bdf8; text-decoration: none; font-size: 0.85rem; }
+        .monitor-link:hover { text-decoration: underline; }
+        .placeholder { color: #64748b; text-align: center; padding: 60px; font-size: 1rem; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="/" title="Back to lines">&larr;</a>
+            <h1><span>Admin</span> Panel</h1>
+        </div>
+    </div>
+    <div class="tabs">
+        <div class="tab active" data-tab="lines">Lines</div>
+        <div class="tab" data-tab="equipment">Equipment</div>
+        <div class="tab" data-tab="reports">Reports</div>
+    </div>
+    <div class="content">
+        <div id="panel-lines" class="tab-panel active">
+            <h2 style="font-size:1.1rem; margin-bottom:8px;">Production Lines</h2>
+            <table>
+                <thead><tr><th>Code</th><th>Name</th><th>Takt</th><th>Target</th><th>Equipment</th><th>Status</th><th>Monitor</th></tr></thead>
+                <tbody id="lines-table"></tbody>
+            </table>
+        </div>
+        <div id="panel-equipment" class="tab-panel">
+            <div class="placeholder">Equipment management - Coming in Feature 8</div>
+        </div>
+        <div id="panel-reports" class="tab-panel">
+            <div class="placeholder">Historical reports - Coming in Feature 5</div>
+        </div>
+    </div>
+    <script>
+        var API_BASE = window.location.origin;
+        // Tab switching
+        document.querySelectorAll(".tab").forEach(function(tab) {
+            tab.addEventListener("click", function() {
+                document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+                document.querySelectorAll(".tab-panel").forEach(function(p) { p.classList.remove("active"); });
+                tab.classList.add("active");
+                document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+            });
+        });
+        // Load lines
+        fetch(API_BASE + "/api/lines")
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.success) return;
+                var tbody = document.getElementById("lines-table");
+                tbody.innerHTML = data.lines.map(function(l) {
+                    return "<tr>" +
+                        "<td style=font-family:monospace>" + l.line_code + "</td>" +
+                        "<td>" + l.line_name + "</td>" +
+                        "<td>" + parseFloat(l.takt_time) + "s</td>" +
+                        "<td>" + l.target_output + "</td>" +
+                        "<td>" + l.equipment_count + "</td>" +
+                        "<td class=" + (l.is_active ? "badge-on" : "badge-off") + ">" + (l.is_active ? "ON" : "OFF") + "</td>" +
+                        "<td><a href=/monitor/" + l.line_code + " class=monitor-link>View &rarr;</a></td>" +
+                    "</tr>";
+                }).join("");
+            });
+    </script>
+</body>
+</html>
