@@ -29,6 +29,13 @@ var CORPORATE_DHCP_RANGES = [
         enabled: true
     },
     {
+        name: 'WorkstationsAreaC',
+        description: 'Estaciones de trabajo - Area C',
+        start: '10.132.0.1',
+        end: '10.132.255.255',
+        enabled: true
+    },
+    {
         name: 'MobileSpecialDevices',
         description: 'Dispositivos moviles y especiales',
         start: '10.92.48.1',

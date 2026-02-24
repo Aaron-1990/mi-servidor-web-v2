@@ -331,13 +331,292 @@
         .viewer-mode .csv-url-display { display: none !important; }
         .viewer-mode .design-ct-display { cursor: default !important; }
         .viewer-mode .equipment-name a { pointer-events: none; border-bottom-color: transparent !important; cursor: default; text-decoration: none !important; }
-    </style>
+    
+/* ==================== TABS & REPORTS (Feature 5) ==================== */
+.tab-nav {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #334155;
+}
+.tab-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1rem;
+    padding: 10px 24px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+.tab-btn:hover { color: #e2e8f0; }
+.tab-btn.active {
+    color: #00d4ff;
+    border-bottom-color: #00d4ff;
+    font-weight: 600;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Reports UI */
+.report-controls {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #1e293b;
+    border-radius: 8px;
+    border: 1px solid #334155;
+}
+.report-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.report-field label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.report-field select,
+.report-field input {
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+.report-field select:focus,
+.report-field input:focus {
+    outline: none;
+    border-color: #00d4ff;
+}
+.btn-generate {
+    background: #00d4ff;
+    color: #0f172a;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-end;
+}
+.btn-generate:hover { background: #00bfe0; }
+.btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-download {
+    background: #334155;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-download:hover { background: #475569; }
+
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.report-title {
+    color: #e2e8f0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+.report-downloads {
+    display: flex;
+    gap: 8px;
+}
+
+.report-table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #334155;
+}
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+.report-table th,
+.report-table td {
+    padding: 6px 8px;
+    text-align: center;
+    border: 1px solid #1e293b;
+}
+.report-table th {
+    background: #334155;
+    color: #e2e8f0;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.report-table th.shift-header {
+    background: #1e3a5f;
+    color: #7dd3fc;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.report-table td {
+    background: #0f172a;
+    color: #cbd5e1;
+}
+.report-table td.eq-name {
+    text-align: left;
+    font-weight: 500;
+    color: #e2e8f0;
+    background: #1e293b;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+.report-table td.process-name {
+    text-align: left;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    background: #1e293b;
+    position: sticky;
+    left: 0;
+}
+.report-table tr.total-row td {
+    background: #334155;
+    color: #00d4ff;
+    font-weight: 700;
+}
+.report-table td.cell-low {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+.report-table td.cell-partial {
+    background: #1e293b;
+    color: #fbbf24;
+    font-style: italic;
+}
+.report-table td.bottleneck-row {
+    background: #78350f;
+    color: #fbbf24;
+}
+.shift-separator {
+    border-left: 3px solid #00d4ff !important;
+}
+.report-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+    font-size: 1rem;
+}
+.report-loading {
+    text-align: center;
+    padding: 40px;
+    color: #94a3b8;
+}
+.report-summary {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+.summary-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-align: center;
+}
+.summary-card .label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+.summary-card .value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #00d4ff;
+}
+.summary-card .value.bottleneck { color: #fbbf24; }
+.summary-card .value.ng { color: #f87171; }
+
+.range-fields {
+    display: none;
+    gap: 12px;
+}
+.range-fields.visible {
+    display: flex;
+}
+
+</style>
 </head>
 <body>
     <div style="display:flex; align-items:center; gap:16px; margin-bottom:10px;"><a href="/" style="color:#94a3b8; text-decoration:none; font-size:1.2rem;" title="Back to lines">&larr;</a><h1 id="line-title" style="color:#00d4ff; margin:0;">VSM Monitor</h1></div>
+    <div class="tab-nav">
+        <button class="tab-btn active" id="btn-tab-dashboard" onclick="switchTab('dashboard')">Dashboard</button>
+        <button class="tab-btn" id="btn-tab-reports" onclick="switchTab('reports')">Reports</button>
+    </div>
+    <div id="tab-dashboard" class="tab-content active">
     <div id="status" class="status disconnected">Connecting...</div>
     <div id="totals" class="totals"></div>
     <div id="grid" class="grid"></div>
+
+    </div><!-- /tab-dashboard -->
+
+    <div id="tab-reports" class="tab-content">
+        <div class="report-controls">
+            <div class="report-field">
+                <label>Report Type</label>
+                <select id="report-type" onchange="onReportTypeChange()">
+                    <option value="hourly">Daily (Hourly Output)</option>
+                    <option value="monthly">Monthly (Daily Output)</option>
+                </select>
+            </div>
+            <div class="report-field" id="field-line">
+                <label>Line</label>
+                <div id="report-line-display" style="background:#0f172a;color:#00d4ff;border:1px solid #475569;border-radius:6px;padding:8px 12px;font-size:0.9rem;font-weight:600"></div>
+            </div>
+            <div class="report-field" id="field-date">
+                <label>Date</label>
+                <input type="date" id="report-date" />
+            </div>
+            <div class="report-field" id="field-month" style="display:none">
+                <label>Month</label>
+                <input type="month" id="report-month" />
+            </div>
+            <div class="report-field" id="field-range-toggle">
+                <label>Time Range</label>
+                <select id="report-range-mode" onchange="onRangeModeChange()">
+                    <option value="full">Full Day (7am-7am)</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+            <div class="range-fields" id="range-fields">
+                <div class="report-field">
+                    <label>From</label>
+                    <input type="time" id="report-start-time" value="07:00" />
+                </div>
+                <div class="report-field">
+                    <label>To</label>
+                    <input type="time" id="report-end-time" value="16:30" />
+                </div>
+            </div>
+            <button class="btn-generate" id="btn-generate" onclick="generateReport()">Generate</button>
+        </div>
+        <div id="report-content">
+            <div class="report-empty">Select parameters and click Generate to view report</div>
+        </div>
+    </div><!-- /tab-reports -->
 
     <script>
         var API_BASE = window.location.origin;
@@ -894,15 +1173,19 @@
 
             var totalOK = 0, totalNG = 0, totalEquip = 0;
             data.processes.forEach(function(p) {
-                p.equipments.forEach(function(e) {
+                p.equipments.forEach(function(e) { totalEquip++; });
+            });
+            // Line output = last process (sum of its parallel equipment)
+            var lastProcess = data.processes[data.processes.length - 1];
+            if (lastProcess) {
+                lastProcess.equipments.forEach(function(e) {
                     totalOK += parseInt(e.pieces_ok_shift) || 0;
                     totalNG += parseInt(e.pieces_ng_shift) || 0;
-                    totalEquip++;
                 });
-            });
+            }
 
             totalsEl.innerHTML = '<div class="total-item"><div class="total-value">' + totalEquip + '</div><div class="total-label">Equipments</div></div>'
-                + '<div class="total-item"><div class="total-value" style="color:#00ff88">' + totalOK.toLocaleString() + '</div><div class="total-label">Pieces OK</div></div>'
+                + '<div class="total-item"><div class="total-value" style="color:#00ff88">' + totalOK.toLocaleString() + '</div><div class="total-label">Line Output</div></div>'
                 + '<div class="total-item"><div class="total-value" style="color:#ff4444">' + totalNG + '</div><div class="total-label">Pieces NG</div></div>'
                 + '<div class="total-item"><div class="total-value">' + ((totalOK+totalNG)>0?((totalOK/(totalOK+totalNG))*100).toFixed(1):'0.0') + '%</div><div class="total-label">Yield</div></div>';
 
@@ -972,7 +1255,300 @@
                 hourlyManager.restoreScrollPositions();
             }, 50);
         });
-    </script>
+    
+
+        // ==================== TAB SWITCHING (Feature 5) ====================
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.getElementById('btn-tab-' + tab).classList.add('active');
+            if (tab === 'reports' && !document.getElementById('report-line-display').textContent) {
+                initReports();
+            }
+        }
+
+        var reportShifts = [];
+
+        function initReports() {
+            document.getElementById('report-line-display').textContent = lineDisplay;
+
+            var today = new Date();
+            var yyyy = today.getFullYear();
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var dd = String(today.getDate()).padStart(2, '0');
+            document.getElementById('report-date').value = yyyy + '-' + mm + '-' + dd;
+            document.getElementById('report-month').value = yyyy + '-' + mm;
+
+            fetch(API_BASE + '/api/reports/shifts/' + lineCode)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) reportShifts = data.data;
+                });
+        }
+
+        function onReportTypeChange() {
+            var type = document.getElementById('report-type').value;
+            document.getElementById('field-date').style.display = type === 'hourly' ? '' : 'none';
+            document.getElementById('field-month').style.display = type === 'monthly' ? '' : 'none';
+            document.getElementById('field-range-toggle').style.display = type === 'hourly' ? '' : 'none';
+            if (type === 'monthly') {
+                document.getElementById('range-fields').classList.remove('visible');
+            }
+        }
+
+        function onRangeModeChange() {
+            var mode = document.getElementById('report-range-mode').value;
+            var fields = document.getElementById('range-fields');
+            if (mode === 'custom') {
+                fields.classList.add('visible');
+            } else {
+                fields.classList.remove('visible');
+            }
+        }
+
+        function generateReport() {
+            var type = document.getElementById('report-type').value;
+            var lc = lineCode;
+            var btn = document.getElementById('btn-generate');
+            var contentDiv = document.getElementById('report-content');
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            contentDiv.innerHTML = '<div class="report-loading">Generating report...</div>';
+            if (type === 'hourly') {
+                generateHourlyReport(lc, contentDiv, btn);
+            } else {
+                generateMonthlyReport(lc, contentDiv, btn);
+            }
+        }
+
+        function generateHourlyReport(lc, contentDiv, btn) {
+            var date = document.getElementById('report-date').value;
+            if (!date) { alert('Select a date'); btn.disabled = false; btn.textContent = 'Generate'; return; }
+            var url = API_BASE + '/api/reports/hourly-output/' + lc + '?date=' + date;
+            var downloadBase = '/api/reports/hourly-output/' + lc + '/download?date=' + date;
+            var rangeMode = document.getElementById('report-range-mode').value;
+            if (rangeMode === 'custom') {
+                var st = document.getElementById('report-start-time').value;
+                var et = document.getElementById('report-end-time').value;
+                if (st && et) {
+                    url += '&startTime=' + st + '&endTime=' + et;
+                    downloadBase += '&startTime=' + st + '&endTime=' + et;
+                }
+            }
+            fetch(url)
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate';
+                    if (!res.success || !res.data || !res.data.equipment.length) {
+                        contentDiv.innerHTML = '<div class="report-empty">No data found for ' + date + '</div>';
+                        return;
+                    }
+                    renderHourlyReport(res.data, contentDiv, downloadBase);
+                })
+                .catch(function(err) {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate';
+                    contentDiv.innerHTML = '<div class="report-empty">Error: ' + err.message + '</div>';
+                });
+        }
+
+        function generateMonthlyReport(lc, contentDiv, btn) {
+            var monthVal = document.getElementById('report-month').value;
+            if (!monthVal) { alert('Select a month'); btn.disabled = false; btn.textContent = 'Generate'; return; }
+            var parts = monthVal.split('-');
+            var year = parts[0];
+            var month = parts[1];
+            var url = API_BASE + '/api/reports/monthly-output/' + lc + '?year=' + year + '&month=' + parseInt(month);
+            var downloadBase = '/api/reports/monthly-output/' + lc + '/download?year=' + year + '&month=' + parseInt(month);
+            fetch(url)
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate';
+                    if (!res.success || !res.data || !res.data.equipment.length) {
+                        contentDiv.innerHTML = '<div class="report-empty">No data found for ' + monthVal + '</div>';
+                        return;
+                    }
+                    renderMonthlyReport(res.data, contentDiv, downloadBase);
+                })
+                .catch(function(err) {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate';
+                    contentDiv.innerHTML = '<div class="report-empty">Error: ' + err.message + '</div>';
+                });
+        }
+
+        function renderHourlyReport(data, container, downloadBase) {
+            var html = '';
+            var dateDisplay = new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+            html += '<div class="report-header">';
+            html += '<div class="report-title">' + data.line.line_name + ' - Hourly Output - ' + dateDisplay + '</div>';
+            html += '<div class="report-downloads">';
+            html += '<a class="btn-download" href="' + downloadBase + '&format=xlsx" target="_blank">Download Excel</a>';
+            html += '<a class="btn-download" href="' + downloadBase + '&format=csv" target="_blank">Download CSV</a>';
+            html += '</div></div>';
+            var shiftStarts = {};
+            if (data.shifts) { data.shifts.forEach(function(s) { shiftStarts[s.startHour] = s.shift_name; }); }
+            html += '<div class="report-table-wrap"><table class="report-table">';
+            if (data.shifts && data.shifts.length > 0) {
+                html += '<tr><th colspan="2"></th>';
+                for (var hi = 0; hi < data.hourColumns.length; hi++) {
+                    var h = data.hourColumns[hi];
+                    var shiftName = '';
+                    var colspan = 0;
+                    for (var si = 0; si < data.shifts.length; si++) {
+                        var s = data.shifts[si];
+                        if (isHourInShift(h, s)) {
+                            if (h === s.startHour) {
+                                colspan = countShiftHours(s, data.hourColumns, hi);
+                                shiftName = s.shift_name;
+                            }
+                            break;
+                        }
+                    }
+                    if (shiftName && colspan > 0) {
+                        html += '<th class="shift-header" colspan="' + colspan + '">' + shiftName + '</th>';
+                        hi += colspan - 1;
+                    }
+                }
+                html += '<th colspan="2"></th></tr>';
+            }
+            html += '<tr><th style="text-align:left">Equipment</th><th style="text-align:left">Process</th>';
+            for (var hi2 = 0; hi2 < data.hourColumns.length; hi2++) {
+                var hv = data.hourColumns[hi2];
+                var nextH = (hv + 1) % 24;
+                var label = String(hv).padStart(2, '0') + '-' + String(nextH).padStart(2, '0');
+                if (data.partialEnd && hv === data.partialEnd.hour) {
+                    label = String(hv).padStart(2, '0') + '-' + String(hv).padStart(2, '0') + ':' + String(data.partialEnd.minutes).padStart(2, '0') + '*';
+                }
+                var sepClass = shiftStarts[hv] && hi2 > 0 ? ' shift-separator' : '';
+                html += '<th class="' + sepClass + '">' + label + '</th>';
+            }
+            html += '<th>Total OK</th><th>Total NG</th></tr>';
+            data.processGroups.forEach(function(pg) {
+                var isBneck = pg.process_name === data.summary.bottleneck;
+                html += '<tr class="process-row' + (isBneck ? ' bottleneck-process' : '') + '">';
+                html += '<td class="eq-name" style="font-weight:700;color:#00d4ff">' + pg.process_name + '</td>';
+                html += '<td class="process-name" style="color:#64748b">(' + pg.equipment.length + ' eq)</td>';
+                for (var phi = 0; phi < data.hourColumns.length; phi++) {
+                    var ph = data.hourColumns[phi];
+                    var pval = pg.hours[ph] ? pg.hours[ph].ok : 0;
+                    var pcClass = '';
+                    var pSep = shiftStarts[ph] && phi > 0 ? ' shift-separator' : '';
+                    if (pval > 0 && pg.avgOk > 0 && pval < pg.avgOk * 0.8) pcClass = 'cell-low';
+                    if (isBneck) pcClass += ' bottleneck-row';
+                    html += '<td class="' + pcClass + pSep + '" style="font-weight:700">' + (pval || '-') + '</td>';
+                }
+                html += '<td style="font-weight:700' + (isBneck ? ';background:#78350f;color:#fbbf24' : '') + '">' + pg.total.ok + '</td>';
+                html += '<td style="font-weight:700' + (isBneck ? ';background:#78350f;color:#fbbf24' : '') + '">' + pg.total.ng + '</td></tr>';
+                if (pg.equipment.length > 1) {
+                    pg.equipment.forEach(function(eq) {
+                        html += '<tr class="eq-detail-row">';
+                        html += '<td class="eq-name" style="padding-left:24px;color:#94a3b8;font-size:0.75rem">' + eq.equipment_name + '</td>';
+                        html += '<td class="process-name"></td>';
+                        for (var ehi = 0; ehi < data.hourColumns.length; ehi++) {
+                            var eh = data.hourColumns[ehi];
+                            var eval2 = eq.hours[eh] ? eq.hours[eh].ok : 0;
+                            var ecClass = '';
+                            var eSep = shiftStarts[eh] && ehi > 0 ? ' shift-separator' : '';
+                            if (eval2 > 0 && eq.avgOk > 0 && eval2 < eq.avgOk * 0.8) ecClass = 'cell-low';
+                            html += '<td class="' + ecClass + eSep + '" style="color:#64748b;font-size:0.75rem">' + (eval2 || '-') + '</td>';
+                        }
+                        html += '<td style="color:#64748b;font-size:0.75rem">' + eq.total.ok + '</td>';
+                        html += '<td style="color:#64748b;font-size:0.75rem">' + eq.total.ng + '</td></tr>';
+                    });
+                }
+            });
+            html += '</table></div>';
+            html += '<div class="report-summary">';
+            html += '<div class="summary-card"><div class="label">Line Output</div><div class="value">' + data.summary.line_output.toLocaleString() + '</div></div>';
+            html += '<div class="summary-card"><div class="label">Total NG</div><div class="value ng">' + data.summary.total_ng.toLocaleString() + '</div></div>';
+            var yieldPct = data.summary.line_output > 0 ? ((data.summary.line_output / (data.summary.line_output + data.summary.total_ng)) * 100).toFixed(2) : 'N/A';
+            html += '<div class="summary-card"><div class="label">Yield</div><div class="value">' + yieldPct + '%</div></div>';
+            html += '<div class="summary-card"><div class="label">Bottleneck</div><div class="value bottleneck">' + (data.summary.bottleneck || 'N/A') + '</div></div>';
+            if (data.summary.bottleneck_total) {
+                html += '<div class="summary-card"><div class="label">Bottleneck Output</div><div class="value bottleneck">' + data.summary.bottleneck_total.toLocaleString() + '</div></div>';
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderMonthlyReport(data, container, downloadBase) {
+            var html = '';
+            var monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+            html += '<div class="report-header">';
+            html += '<div class="report-title">' + data.line.line_name + ' - Monthly Output - ' + monthNames[data.month] + ' ' + data.year + '</div>';
+            html += '<div class="report-downloads">';
+            html += '<a class="btn-download" href="' + downloadBase + '&format=xlsx" target="_blank">Download Excel</a>';
+            html += '<a class="btn-download" href="' + downloadBase + '&format=csv" target="_blank">Download CSV</a>';
+            html += '</div></div>';
+            html += '<div class="report-table-wrap"><table class="report-table">';
+            html += '<tr><th style="text-align:left">Equipment</th><th style="text-align:left">Process</th>';
+            data.dayColumns.forEach(function(d) { html += '<th>' + parseInt(d.split('-')[2]) + '</th>'; });
+            html += '<th>Total OK</th><th>Total NG</th></tr>';
+            data.processGroups.forEach(function(pg) {
+                var isBneck = pg.process_name === data.summary.bottleneck;
+                html += '<tr class="process-row' + (isBneck ? ' bottleneck-process' : '') + '">';
+                html += '<td class="eq-name" style="font-weight:700;color:#00d4ff">' + pg.process_name + '</td>';
+                html += '<td class="process-name" style="color:#64748b">(' + pg.equipment.length + ' eq)</td>';
+                data.dayColumns.forEach(function(d) {
+                    var pval = pg.days[d] ? pg.days[d].ok : 0;
+                    var pcClass = '';
+                    if (pval > 0 && pg.avgOk > 0 && pval < pg.avgOk * 0.8) pcClass = 'cell-low';
+                    if (isBneck) pcClass += ' bottleneck-row';
+                    html += '<td class="' + pcClass + '" style="font-weight:700">' + (pval || '-') + '</td>';
+                });
+                html += '<td style="font-weight:700' + (isBneck ? ';background:#78350f;color:#fbbf24' : '') + '">' + pg.total.ok + '</td>';
+                html += '<td style="font-weight:700' + (isBneck ? ';background:#78350f;color:#fbbf24' : '') + '">' + pg.total.ng + '</td></tr>';
+                if (pg.equipment.length > 1) {
+                    pg.equipment.forEach(function(eq) {
+                        html += '<tr class="eq-detail-row">';
+                        html += '<td class="eq-name" style="padding-left:24px;color:#94a3b8;font-size:0.75rem">' + eq.equipment_name + '</td>';
+                        html += '<td class="process-name"></td>';
+                        data.dayColumns.forEach(function(d) {
+                            var val = eq.days[d] ? eq.days[d].ok : 0;
+                            var ecClass = '';
+                            if (val > 0 && eq.avgOk > 0 && val < eq.avgOk * 0.8) ecClass = 'cell-low';
+                            html += '<td class="' + ecClass + '" style="color:#64748b;font-size:0.75rem">' + (val || '-') + '</td>';
+                        });
+                        html += '<td style="color:#64748b;font-size:0.75rem">' + eq.total.ok + '</td>';
+                        html += '<td style="color:#64748b;font-size:0.75rem">' + eq.total.ng + '</td></tr>';
+                    });
+                }
+            });
+            html += '</table></div>';
+            html += '<div class="report-summary">';
+            html += '<div class="summary-card"><div class="label">Line Output</div><div class="value">' + data.summary.line_output.toLocaleString() + '</div></div>';
+            html += '<div class="summary-card"><div class="label">Total NG</div><div class="value ng">' + data.summary.total_ng.toLocaleString() + '</div></div>';
+            var yieldPct = data.summary.line_output > 0 ? ((data.summary.line_output / (data.summary.line_output + data.summary.total_ng)) * 100).toFixed(2) : 'N/A';
+            html += '<div class="summary-card"><div class="label">Yield</div><div class="value">' + yieldPct + '%</div></div>';
+            html += '<div class="summary-card"><div class="label">Bottleneck</div><div class="value bottleneck">' + (data.summary.bottleneck || 'N/A') + '</div></div>';
+            if (data.summary.bottleneck_total) {
+                html += '<div class="summary-card"><div class="label">Bottleneck Output</div><div class="value bottleneck">' + data.summary.bottleneck_total.toLocaleString() + '</div></div>';
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function isHourInShift(hour, shift) {
+            var start = shift.startHour;
+            var end = shift.endHour;
+            if (start <= end) { return hour >= start && hour < end; }
+            else { return hour >= start || hour < end; }
+        }
+
+        function countShiftHours(shift, hourColumns, startIdx) {
+            var count = 0;
+            for (var i = startIdx; i < hourColumns.length; i++) {
+                if (isHourInShift(hourColumns[i], shift)) { count++; } else { break; }
+            }
+            return count;
+        }
+
+</script>
 </body>
 </html>
 

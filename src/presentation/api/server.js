@@ -29,6 +29,31 @@ const productionLineRepo = new ProductionLineRepository();
 const EquipmentDesignRepository = require('../../infrastructure/repositories/EquipmentDesignRepository');
 const equipmentRepo = new EquipmentDesignRepository();
 
+// Feature 5: Reports
+const ReportService = require('../../application/services/ReportService');
+const reportService = new ReportService();
+
+// ==================== ADMIN AUTH (HTTP Basic) ====================
+const ADMIN_USER = process.env.VSM_ADMIN_USER || 'vsm_admin';
+const ADMIN_PASS = process.env.VSM_ADMIN_PASS || 'BW-gpec5-2026';
+
+function adminAuth(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="VSM Admin"');
+        return res.status(401).send('Authentication required');
+    }
+    const base64 = authHeader.split(' ')[1];
+    const decoded = Buffer.from(base64, 'base64').toString('utf8');
+    const [user, pass] = decoded.split(':');
+    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+        return next();
+    }
+    res.setHeader('WWW-Authenticate', 'Basic realm="VSM Admin"');
+    return res.status(401).send('Invalid credentials');
+}
+
+
 const hourlyMetricsRepo = new HourlyMetricsRepository(pool);
 const hourlyMetricsService = new HourlyMetricsService(hourlyMetricsRepo);
 
@@ -73,6 +98,9 @@ app.use(ipFilterMiddleware);
 
 // Serve static files (public folder)
 var path = require('path');
+// Protect all admin routes
+app.use('/admin', adminAuth);
+
 app.use(express.static(path.join(__dirname, '..', '..', '..', 'public')));
 
 // ==================== REST ENDPOINTS ====================
@@ -473,6 +501,126 @@ app.post('/api/equipment/test-url', async (req, res) => {
         res.json({ success: true, ...result });
     } catch (error) {
         logger.error("Error testing CSV URL: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
+// ==================== REPORT ROUTES (Feature 5) ====================
+
+// Get shift definitions for a line
+app.get('/api/reports/shifts/:lineCode', async (req, res) => {
+    try {
+        const shifts = await reportService.repo.getShiftDefinitions(req.params.lineCode);
+        res.json({ success: true, data: shifts });
+    } catch (error) {
+        logger.error('Error fetching shifts:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get available dates for date picker
+app.get('/api/reports/available-dates/:lineCode', async (req, res) => {
+    try {
+        const dates = await reportService.repo.getAvailableDates(req.params.lineCode);
+        res.json({ success: true, data: dates });
+    } catch (error) {
+        logger.error('Error fetching available dates:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Generate hourly report (JSON)
+app.get('/api/reports/hourly-output/:lineCode', async (req, res) => {
+    try {
+        const { date, startTime, endTime } = req.query;
+        if (!date) return res.status(400).json({ success: false, error: 'date parameter required' });
+
+        const options = {};
+        if (startTime && endTime) {
+            options.startTime = startTime;
+            options.endTime = endTime;
+        }
+
+        const report = await reportService.generateHourlyReport(req.params.lineCode, date, options);
+        res.json({ success: true, data: report });
+    } catch (error) {
+        logger.error('Error generating hourly report:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Download hourly report (Excel/CSV)
+app.get('/api/reports/hourly-output/:lineCode/download', async (req, res) => {
+    try {
+        const { date, startTime, endTime, format } = req.query;
+        if (!date) return res.status(400).json({ success: false, error: 'date parameter required' });
+
+        const options = {};
+        if (startTime && endTime) {
+            options.startTime = startTime;
+            options.endTime = endTime;
+        }
+
+        const report = await reportService.generateHourlyReport(req.params.lineCode, date, options);
+        const lineName = report.line.line_name || req.params.lineCode;
+        const fileName = lineName + '-hourly-' + date;
+
+        if (format === 'csv') {
+            const csv = reportService.generateCSV(report, 'hourly');
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="' + fileName + '.csv"');
+            res.send(csv);
+        } else {
+            const buffer = reportService.generateExcel(report, 'hourly');
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', 'attachment; filename="' + fileName + '.xlsx"');
+            res.send(Buffer.from(buffer));
+        }
+    } catch (error) {
+        logger.error('Error downloading hourly report:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Generate monthly report (JSON)
+app.get('/api/reports/monthly-output/:lineCode', async (req, res) => {
+    try {
+        const { year, month } = req.query;
+        if (!year || !month) return res.status(400).json({ success: false, error: 'year and month parameters required' });
+
+        const report = await reportService.generateMonthlyReport(req.params.lineCode, parseInt(year), parseInt(month));
+        res.json({ success: true, data: report });
+    } catch (error) {
+        logger.error('Error generating monthly report:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Download monthly report (Excel/CSV)
+app.get('/api/reports/monthly-output/:lineCode/download', async (req, res) => {
+    try {
+        const { year, month, format } = req.query;
+        if (!year || !month) return res.status(400).json({ success: false, error: 'year and month parameters required' });
+
+        const report = await reportService.generateMonthlyReport(req.params.lineCode, parseInt(year), parseInt(month));
+        const lineName = report.line.line_name || req.params.lineCode;
+        const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const fileName = lineName + '-monthly-' + monthNames[parseInt(month)] + '-' + year;
+
+        if (format === 'csv') {
+            const csv = reportService.generateCSV(report, 'monthly');
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="' + fileName + '.csv"');
+            res.send(csv);
+        } else {
+            const buffer = reportService.generateExcel(report, 'monthly');
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', 'attachment; filename="' + fileName + '.xlsx"');
+            res.send(Buffer.from(buffer));
+        }
+    } catch (error) {
+        logger.error('Error downloading monthly report:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
