@@ -1,3 +1,4 @@
+var fs = require('fs');
 ﻿/**
  * VSM Server con API REST + WebSocket
  * 
@@ -31,6 +32,8 @@ const equipmentRepo = new EquipmentDesignRepository();
 
 // Feature 5: Reports
 const ReportService = require('../../application/services/ReportService');
+var ServerHealthService = require('../../application/services/ServerHealthService');
+var serverHealthService = new ServerHealthService();
 const reportService = new ReportService();
 
 // ==================== ADMIN AUTH (HTTP Basic) ====================
@@ -622,6 +625,44 @@ app.get('/api/reports/monthly-output/:lineCode/download', async (req, res) => {
     } catch (error) {
         logger.error('Error downloading monthly report:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================================
+// SERVER HEALTH MONITORING (System Tab)
+// ============================================================
+
+app.get('/api/admin/server-health', adminAuth, async function(req, res) {
+    try {
+        var health = await serverHealthService.getFullHealth();
+        res.json(health);
+    } catch (error) {
+        logger.error('Error getting server health:', error);
+        res.status(500).json({ error: 'Failed to get server health', message: error.message });
+    }
+});
+
+app.get('/api/admin/server-logs', adminAuth, function(req, res) {
+    var service = req.query.service || 'api';
+    var lines = Math.min(parseInt(req.query.lines) || 20, 100);
+    var validServices = ['api', 'scheduler', 'pulse'];
+
+    if (validServices.indexOf(service) === -1) {
+        return res.status(400).json({ error: 'Invalid service. Use: api, scheduler, pulse' });
+    }
+
+    var logPath = path.join(__dirname, '..', '..', '..', 'logs', 'vsm-' + service + '-stdout.log');
+
+    try {
+        if (!fs.existsSync(logPath)) {
+            return res.json({ service: service, lines: [], message: 'Log file not found' });
+        }
+        var logContent = fs.readFileSync(logPath, 'utf-8');
+        var allLines = logContent.split('\n').filter(function(l) { return l.trim().length > 0; });
+        var lastLines = allLines.slice(-lines);
+        res.json({ service: service, total: allLines.length, lines: lastLines });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to read logs', message: error.message });
     }
 });
 

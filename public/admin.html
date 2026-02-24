@@ -79,6 +79,49 @@
         .toast-success { background: #14532d; color: #4ade80; border: 1px solid #22c55e; }
         .toast-error { background: #450a0a; color: #fca5a5; border: 1px solid #ef4444; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* System Tab */
+        .sys-bar { padding:15px 25px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; font-size:1.1rem; font-weight:600; margin-bottom:15px; color:white; transition:background 0.3s; }
+        .sys-healthy { background:linear-gradient(135deg,#27ae60,#2ecc71); }
+        .sys-warning { background:linear-gradient(135deg,#e67e22,#f39c12); }
+        .sys-critical { background:linear-gradient(135deg,#c0392b,#e74c3c); }
+        .sys-loading { background:#95a5a6; }
+        .sys-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+        .sys-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+        .sys-card { background:white; border-radius:10px; padding:20px; box-shadow:0 2px 10px rgba(0,0,0,0.08); }
+        .sys-title { font-size:1rem; font-weight:700; color:#2c3e50; margin-bottom:15px; padding-bottom:8px; border-bottom:2px solid #ecf0f1; }
+        .sys-check { display:flex; align-items:center; padding:8px 12px; margin-bottom:6px; border-radius:6px; border-left:4px solid #ccc; background:#f8f9fa; font-size:0.9rem; }
+        .sys-chk-ok { border-left-color:#2ecc71; }
+        .sys-chk-warning { border-left-color:#f39c12; }
+        .sys-chk-critical { border-left-color:#e74c3c; background:#fdf2f2; }
+        .sys-chk-icon { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-right:10px; font-size:0.75rem; color:white; flex-shrink:0; }
+        .sys-ico-ok { background:#2ecc71; }
+        .sys-ico-warning { background:#f39c12; }
+        .sys-ico-critical { background:#e74c3c; }
+        .sys-chk-name { font-weight:600; margin-right:8px; color:#2c3e50; }
+        .sys-chk-detail { color:#7f8c8d; font-size:0.85rem; }
+        .sys-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f0f0f0; font-size:0.9rem; }
+        .sys-row:last-child { border-bottom:none; }
+        .sys-lbl { color:#7f8c8d; }
+        .sys-val { font-weight:600; color:#2c3e50; }
+        .sys-gauge { text-align:center; }
+        .sys-gauge-label { font-weight:600; color:#2c3e50; margin-bottom:10px; font-size:0.95rem; }
+        .sys-gauge-pct { font-size:1.5rem; font-weight:700; color:#2c3e50; }
+        .sys-gauge-track { height:18px; background:#ecf0f1; border-radius:9px; overflow:hidden; margin:8px 0; }
+        .sys-gauge-fill { height:100%; border-radius:9px; transition:width 0.5s ease; }
+        .sys-fill-ok { background:linear-gradient(90deg,#2ecc71,#27ae60); }
+        .sys-fill-warning { background:linear-gradient(90deg,#f39c12,#e67e22); }
+        .sys-fill-critical { background:linear-gradient(90deg,#e74c3c,#c0392b); }
+        .sys-gauge-detail { font-size:0.8rem; color:#95a5a6; }
+        .sys-node-bar { margin-top:15px; padding-top:12px; border-top:2px solid #ecf0f1; display:flex; justify-content:center; gap:30px; font-size:0.85rem; color:#7f8c8d; }
+        .sys-node-bar span { font-weight:600; color:#2c3e50; }
+        .sys-logs-box { background:#1e1e1e; border-radius:6px; padding:12px; max-height:250px; overflow-y:auto; font-family:Consolas,monospace; font-size:0.78rem; line-height:1.5; }
+        .sys-log { color:#d4d4d4; white-space:pre-wrap; word-break:break-all; }
+        .sys-log-err { color:#f44747; }
+        .sys-log-warn { color:#cca700; }
+        .sys-log-info { color:#6a9955; }
+        @media(max-width:768px) { .sys-grid2{grid-template-columns:1fr;} .sys-grid3{grid-template-columns:1fr;} }
+
     </style>
 </head>
 <body>
@@ -91,6 +134,7 @@
     <div class="tabs">
         <div class="tab active" data-tab="lines">Lines</div>
         <div class="tab" data-tab="equipment">Equipment</div>
+        <div class="tab" data-tab="system">System</div>
         
     </div>
     <div class="content">
@@ -196,6 +240,60 @@
             
         </div>
     </div>
+
+        <div id="panel-system" class="tab-panel">
+            <div id="system-unreachable" style="display:none; background:#e74c3c; color:white; padding:20px; border-radius:10px; text-align:center; margin-bottom:20px; font-size:1.2rem; font-weight:600;">
+                SERVER UNREACHABLE - Cannot connect to API
+            </div>
+            <div id="system-overall" class="sys-bar sys-loading">
+                <span id="system-overall-text">Loading...</span>
+                <span id="system-refresh-info" style="font-size:0.85rem; opacity:0.8;">Auto-refresh: 30s</span>
+            </div>
+            <div class="sys-grid2">
+                <div class="sys-card">
+                    <div class="sys-title">Health Checks</div>
+                    <div id="sys-checks"></div>
+                </div>
+                <div class="sys-card">
+                    <div class="sys-title">Server Info</div>
+                    <div id="sys-server"></div>
+                </div>
+            </div>
+            <div class="sys-card" style="margin-top:15px;">
+                <div class="sys-title">Resources</div>
+                <div class="sys-grid3" id="sys-resources"></div>
+                <div id="sys-node-info"></div>
+            </div>
+            <div class="sys-grid2" style="margin-top:15px;">
+                <div class="sys-card">
+                    <div class="sys-title">Data Pipeline</div>
+                    <div id="sys-pipeline"></div>
+                </div>
+                <div class="sys-card">
+                    <div class="sys-title">Database</div>
+                    <div id="sys-database"></div>
+                </div>
+            </div>
+            <div class="sys-grid2" style="margin-top:15px;">
+                <div class="sys-card">
+                    <div class="sys-title">WebSocket</div>
+                    <div id="sys-websocket"></div>
+                </div>
+                <div class="sys-card">
+                    <div class="sys-title" style="display:flex; align-items:center; gap:10px;">
+                        Recent Logs
+                        <select id="log-svc" style="padding:3px 8px; border-radius:4px; border:1px solid #ddd; font-size:0.85rem;">
+                            <option value="api">API</option>
+                            <option value="scheduler">Scheduler</option>
+                            <option value="pulse">Pulse</option>
+                        </select>
+                        <button onclick="loadSysLogs()" style="padding:3px 10px; border-radius:4px; border:1px solid #ddd; background:#f8f9fa; cursor:pointer; font-size:0.85rem;">Refresh</button>
+                    </div>
+                    <div id="sys-logs" class="sys-logs-box"></div>
+                </div>
+            </div>
+        </div>
+
     <script>
         var API_BASE = window.location.origin;
         // Tab switching
@@ -205,6 +303,7 @@
                 document.querySelectorAll(".tab-panel").forEach(function(p) { p.classList.remove("active"); });
                 tab.classList.add("active");
                 document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+                if (tab.dataset.tab === "system") { startSysRefresh(); } else { stopSysRefresh(); }
             });
         });
         // Load lines
@@ -488,6 +587,160 @@
             }).join("");
         });
         loadEquipment();
+
+    // ============================================================
+    // SYSTEM TAB - Server Health Dashboard
+    // ============================================================
+    var sysInterval = null;
+
+    function startSysRefresh() {
+        loadSysHealth();
+        loadSysLogs();
+        if (!sysInterval) sysInterval = setInterval(loadSysHealth, 30000);
+    }
+
+    function stopSysRefresh() {
+        if (sysInterval) { clearInterval(sysInterval); sysInterval = null; }
+    }
+
+    async function loadSysHealth() {
+        try {
+            var r = await fetch("/api/admin/server-health");
+            if (r.status === 401) {
+                document.getElementById("system-overall").className = "sys-bar sys-critical";
+                document.getElementById("system-overall-text").textContent = "Auth required - reload page";
+                return;
+            }
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            var d = await r.json();
+            document.getElementById("system-unreachable").style.display = "none";
+            renderSysOverall(d.health);
+            renderSysChecks(d.health.checks);
+            renderSysServer(d.server);
+            renderSysResources(d.resources);
+            renderSysPipeline(d.pipeline);
+            renderSysDB(d.database);
+            renderSysWS(d.websocket);
+            document.getElementById("system-refresh-info").textContent = "Auto-refresh: 30s | Updated: " + new Date().toLocaleTimeString();
+        } catch (e) {
+            document.getElementById("system-unreachable").style.display = "block";
+            document.getElementById("system-overall").className = "sys-bar sys-critical";
+            document.getElementById("system-overall-text").textContent = "CONNECTION FAILED";
+        }
+    }
+
+    function renderSysOverall(h) {
+        var m = { healthy:["sys-healthy","ALL SYSTEMS HEALTHY"], warning:["sys-warning","WARNING - Review checks below"], critical:["sys-critical","CRITICAL - Attention needed"] };
+        var s = m[h.overall] || m.critical;
+        document.getElementById("system-overall").className = "sys-bar " + s[0];
+        document.getElementById("system-overall-text").textContent = s[1];
+    }
+
+    function renderSysChecks(checks) {
+        var ico = { ok:"&#10003;", warning:"!", critical:"&#10007;" };
+        var html = "";
+        for (var i = 0; i < checks.length; i++) {
+            var c = checks[i];
+            html += '<div class="sys-check sys-chk-' + c.status + '">';
+            html += '<div class="sys-chk-icon sys-ico-' + c.status + '">' + ico[c.status] + '</div>';
+            html += '<span class="sys-chk-name">' + c.name + '</span>';
+            html += '<span class="sys-chk-detail">' + c.detail + '</span></div>';
+        }
+        document.getElementById("sys-checks").innerHTML = html;
+    }
+
+    function renderSysServer(sv) {
+        if (sv.error) { document.getElementById("sys-server").innerHTML = '<span style="color:#e74c3c">' + sv.error + '</span>'; return; }
+        var rows = [["Hostname",sv.hostname],["Node.js",sv.nodeVersion],["Uptime",sv.uptimeFormatted],["Started",new Date(sv.startedAt).toLocaleString()],["Platform",sv.platform+" "+sv.arch]];
+        document.getElementById("sys-server").innerHTML = buildRows(rows);
+    }
+
+    function renderSysResources(res) {
+        if (res.error) { document.getElementById("sys-resources").innerHTML = '<span style="color:#e74c3c">' + res.error + '</span>'; return; }
+        var html = "";
+        html += buildGauge("RAM", res.memory.usagePercent, res.memory.usedGB + " / " + res.memory.totalGB + " GB");
+        var cpuPct = Math.min(100, Math.round(res.cpu.loadAvg1m / res.cpu.cores * 100));
+        html += buildGauge("CPU (" + res.cpu.cores + " cores)", cpuPct, "Load: " + res.cpu.loadAvg1m + " / " + res.cpu.loadAvg5m + " / " + res.cpu.loadAvg15m);
+        html += buildGauge("Disk " + res.disk.drive, res.disk.usagePercent, res.disk.freeGB + " GB free");
+        document.getElementById("sys-resources").innerHTML = html;
+        document.getElementById("sys-node-info").innerHTML = '<div class="sys-node-bar">Node.js Process: RSS <span>' + res.memory.nodeRSS_MB + ' MB</span> | Heap <span>' + res.memory.nodeHeap_MB + ' MB</span></div>';
+    }
+
+    function buildGauge(label, pct, detail) {
+        var cls = pct < 80 ? "sys-fill-ok" : pct < 95 ? "sys-fill-warning" : "sys-fill-critical";
+        return '<div class="sys-gauge"><div class="sys-gauge-label">' + label + '</div><div class="sys-gauge-pct">' + pct + '%</div><div class="sys-gauge-track"><div class="sys-gauge-fill ' + cls + '" style="width:' + pct + '%"></div></div><div class="sys-gauge-detail">' + detail + '</div></div>';
+    }
+
+    function renderSysPipeline(p) {
+        var el = document.getElementById("sys-pipeline");
+        if (p.error) { el.innerHTML = '<span style="color:#e74c3c">' + p.error + '</span>'; return; }
+        var dot = function(on) { return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + (on?"#2ecc71":"#e74c3c") + ';margin-right:6px;vertical-align:middle;"></span>'; };
+        var rows = [
+            ["Last Scan", p.lastRawScanAge || "N/A"],
+            ["Last Calc", p.lastMetricsCalcAge || "N/A"],
+            ["Scheduler", dot(p.schedulerActive) + (p.schedulerActive ? "Active" : "Inactive")],
+            ["Pulse", dot(p.pulseActive) + (p.pulseActive ? "Active" : "Inactive")],
+            ["Active Equipment", p.activeEquipment],
+            ["With Recent Data", p.equipmentWithRecentData + " / " + p.activeEquipment]
+        ];
+        el.innerHTML = buildRows(rows);
+    }
+
+    function renderSysDB(db) {
+        var el = document.getElementById("sys-database");
+        if (!db.connected) { el.innerHTML = '<div style="color:#e74c3c;font-weight:600;">DISCONNECTED</div><div style="color:#7f8c8d;margin-top:8px;">' + (db.error||"Unknown") + '</div>'; return; }
+        var rows = [
+            ["Status", '<span style="color:#27ae60;font-weight:600;">Connected</span>'],
+            ["Latency", db.latencyMs + " ms"],
+            ["Version", db.version],
+            ["DB Size", db.sizeMB + " MB"],
+            ["raw_scans", db.tables.raw_scans.toLocaleString() + " rows"],
+            ["equipment", db.tables.equipment_design + " configured"]
+        ];
+        el.innerHTML = buildRows(rows);
+    }
+
+    function renderSysWS(ws) {
+        var el = document.getElementById("sys-websocket");
+        if (ws.error) { el.innerHTML = '<span style="color:#e74c3c">' + ws.error + '</span>'; return; }
+        var rooms = ws.rooms.length > 0 ? ws.rooms.join(", ") : "None";
+        el.innerHTML = buildRows([["Connected Clients", ws.connectedClients],["Active Rooms", rooms]]);
+    }
+
+    function buildRows(rows) {
+        var html = "";
+        for (var i = 0; i < rows.length; i++) {
+            html += '<div class="sys-row"><span class="sys-lbl">' + rows[i][0] + '</span><span class="sys-val">' + rows[i][1] + '</span></div>';
+        }
+        return html;
+    }
+
+    async function loadSysLogs() {
+        var svc = document.getElementById("log-svc").value;
+        var box = document.getElementById("sys-logs");
+        try {
+            var r = await fetch("/api/admin/server-logs?service=" + svc + "&lines=20");
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            var d = await r.json();
+            if (d.lines.length === 0) { box.innerHTML = '<div class="sys-log" style="color:#95a5a6;">No logs for ' + svc + '</div>'; return; }
+            var html = "";
+            for (var i = 0; i < d.lines.length; i++) {
+                var ln = d.lines[i].replace(/\x1b\[[0-9;]*m/g, "");
+                var cls = "sys-log";
+                var low = ln.toLowerCase();
+                if (low.indexOf("error") !== -1) cls += " sys-log-err";
+                else if (low.indexOf("warn") !== -1) cls += " sys-log-warn";
+                else if (low.indexOf("info") !== -1) cls += " sys-log-info";
+                var safe = ln.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                html += '<div class="' + cls + '">' + safe + '</div>';
+            }
+            box.innerHTML = html;
+            box.scrollTop = box.scrollHeight;
+        } catch (e) {
+            box.innerHTML = '<div class="sys-log sys-log-err">Failed to load logs: ' + e.message + '</div>';
+        }
+    }
+
     </script>
 </body>
 </html>
