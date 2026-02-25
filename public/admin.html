@@ -184,7 +184,8 @@
                         <div class="form-group">
                             <label>Process</label>
                             <select id="f-process"></select>
-                            <div class="form-hint">Select existing or type new in ID</div>
+                            <input type="text" id="f-process-new" placeholder="e.g. ICT" style="display:none; margin-top:6px; width:100%; background:#0f172a; color:#e2e8f0; border:1px solid #334155; padding:8px 12px; border-radius:4px; font-size:0.9rem;">
+                            <div class="form-hint">Select existing or choose "+ New Process..."</div>
                         </div>
                         <div class="form-group">
                             <label>Design CT (sec)</label>
@@ -472,11 +473,14 @@
             fetch(API_BASE + "/api/processes").then(function(r) { return r.json(); }).then(function(data) {
                 if (!data.success) return;
                 var sel = document.getElementById("f-process");
-                sel.innerHTML = "<option value=\"\">-- Select or type new --</option>"
+                sel.innerHTML = "<option value=\"\">-- Select process --</option>"
                     + data.processes.map(function(p) {
                         return "<option value=\"" + p + "\">" + p + "</option>";
-                    }).join("");
+                    }).join("")
+                    + "<option value=\"__NEW__\">+ New Process...</option>";
                 if (eq && eq.process_name) sel.value = eq.process_name;
+                document.getElementById("f-process-new").style.display = "none";
+                document.getElementById("f-process-new").value = "";
             });
         }
 
@@ -485,14 +489,36 @@
             document.getElementById("parallel-fields").style.display = this.checked ? "block" : "none";
         });
 
+        // New Process: show/hide text input when "+ New Process..." selected
+        document.getElementById("f-process").addEventListener("change", function() {
+            var newInput = document.getElementById("f-process-new");
+            if (this.value === "__NEW__") {
+                newInput.style.display = "block";
+                newInput.focus();
+            } else {
+                newInput.style.display = "none";
+                newInput.value = "";
+            }
+        });
+
         // --- Save ---
         function saveEquipment() {
             var eqType = document.querySelector("input[name=f-eq-type]:checked").value;
             var isParallel = document.getElementById("f-is-parallel").checked;
 
+            // Resolve process name: existing selection or new input
+            var processName = document.getElementById("f-process").value;
+            if (processName === "__NEW__") {
+                processName = document.getElementById("f-process-new").value.trim();
+                if (!processName) {
+                    showToast("Enter a name for the new process", "error");
+                    return;
+                }
+            }
+
             var payload = {
                 equipment_name: document.getElementById("f-eq-name").value.trim(),
-                process_name: document.getElementById("f-process").value,
+                process_name: processName,
                 csv_url: document.getElementById("f-csv-url").value.trim() || null,
                 design_ct: parseFloat(document.getElementById("f-design-ct").value),
                 equipment_type: eqType,
