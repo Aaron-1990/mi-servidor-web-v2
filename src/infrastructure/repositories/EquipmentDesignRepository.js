@@ -58,7 +58,21 @@ class EquipmentDesignRepository {
                 data.is_parallel || false
             ]);
 
-            // 2. INSERT line_processes
+            // 2. SHIFT process_orders only if this is a NEW process at this position
+            const checkExisting = "SELECT COUNT(*)::int AS cnt FROM line_processes lp"
+                + " JOIN equipment_design ed ON lp.equipment_id = ed.equipment_id"
+                + " WHERE lp.line_id = " + D + "1 AND lp.process_order = " + D + "2"
+                + " AND ed.process_name = " + D + "3";
+            const existCheck = await client.query(checkExisting, [data.line_id, data.process_order, data.process_name]);
+            if (existCheck.rows[0].cnt === 0) {
+                // New process at this position - shift others down
+                const shiftOrders = "UPDATE line_processes SET process_order = process_order + 1"
+                    + " WHERE line_id = " + D + "1 AND process_order >= " + D + "2";
+                await client.query(shiftOrders, [data.line_id, data.process_order]);
+                logger.info("[REPO] Shifted process_orders >= " + data.process_order + " for line_id " + data.line_id);
+            }
+
+            // 3. INSERT line_processes
             const insertLP = "INSERT INTO line_processes"
                 + " (line_id, equipment_id, process_order, is_parallel, parallel_group, sub_line_group)"
                 + " VALUES (" + D + "1, " + D + "2, " + D + "3, " + D + "4, " + D + "5, " + D + "6)";
@@ -71,7 +85,7 @@ class EquipmentDesignRepository {
                 data.sub_line_group || null
             ]);
 
-            // 3. INSERT equipment_metrics (initialized with nulls)
+            // 4. INSERT equipment_metrics (initialized with nulls)
             const insertMetrics = "INSERT INTO equipment_metrics (equipment_id) VALUES (" + D + "1)";
             await client.query(insertMetrics, [data.equipment_id]);
 
