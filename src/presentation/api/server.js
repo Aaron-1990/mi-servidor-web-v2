@@ -718,6 +718,7 @@ async function getVSMData(lineCode) {
         FROM equipment_metrics em
         LEFT JOIN equipment_design ed ON em.equipment_id = ed.equipment_id
         LEFT JOIN line_processes lp ON em.equipment_id = lp.equipment_id
+        WHERE ed.is_active = true
         ORDER BY lp.process_order, lp.parallel_group NULLS FIRST, em.equipment_id
     `;
     const result = await pool.query(query);

@@ -151,6 +151,7 @@
                 <select id="eq-filter-line" onchange="loadEquipment()"><option value="">All Lines</option></select>
                 <select id="eq-filter-process" onchange="filterTable()"><option value="">All Processes</option></select>
                 <input type="text" id="eq-search" placeholder="Search by ID or name..." oninput="filterTable()">
+                <label style="display:flex; align-items:center; gap:5px; font-size:0.8rem; color:#94a3b8; cursor:pointer;"><input type="checkbox" id="eq-show-inactive" onchange="filterTable()"> Show inactive</label>
                 <span class="eq-count" id="eq-count"></span>
                 <button class="btn btn-primary" onclick="openModal()">+ New Equipment</button>
             </div>
@@ -359,7 +360,9 @@
         function filterTable() {
             var proc = document.getElementById("eq-filter-process").value;
             var search = document.getElementById("eq-search").value.toLowerCase();
+            var showInactive = document.getElementById("eq-show-inactive").checked;
             var filtered = allEquipment.filter(function(e) {
+                if (!showInactive && !e.is_active) return false;
                 if (proc && e.process_name !== proc) return false;
                 if (search && e.equipment_id.toLowerCase().indexOf(search) === -1 && e.equipment_name.toLowerCase().indexOf(search) === -1) return false;
                 return true;
