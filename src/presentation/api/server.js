@@ -250,6 +250,31 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '..', '..', '..', 'public', 'admin.html'));
 });
 
+
+// POST /api/lines - Create new production line
+app.post("/api/lines", async function(req, res) {
+    try {
+        var d = req.body;
+        if (!d.line_name || !d.line_code) {
+            return res.status(400).json({ success: false, error: "line_name and line_code required" });
+        }
+        var line = await productionLineRepo.createLine(d);
+        res.json({ success: true, line: line });
+    } catch (err) {
+        if (err.code === "23505") return res.status(409).json({ success: false, error: "line_code already exists" });
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+// PUT /api/lines/:id - Update production line
+app.put("/api/lines/:id", async function(req, res) {
+    try {
+        var line = await productionLineRepo.updateLine(req.params.id, req.body);
+        if (!line) return res.status(404).json({ success: false, error: "Line not found" });
+        res.json({ success: true, line: line });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 // GET /api/lines - List active production lines
 app.get('/api/lines', async (req, res) => {
     try {
@@ -718,10 +743,11 @@ async function getVSMData(lineCode) {
         FROM equipment_metrics em
         LEFT JOIN equipment_design ed ON em.equipment_id = ed.equipment_id
         LEFT JOIN line_processes lp ON em.equipment_id = lp.equipment_id
-        WHERE ed.is_active = true
+        LEFT JOIN production_lines pl ON lp.line_id = pl.id
+        WHERE ed.is_active = true AND (pl.line_code = $1 OR $1::text IS NULL)
         ORDER BY lp.process_order, lp.parallel_group NULLS FIRST, em.equipment_id
     `;
-    const result = await pool.query(query);
+    const result = await pool.query(query, [lineCode || null]);
     
     const processes = {};
     for (const row of result.rows) {
@@ -750,13 +776,21 @@ async function getVSMData(lineCode) {
 io.on('connection', (socket) => {
     logger.info(`WebSocket client connected: ${socket.id}`);
     
-    getVSMData().then(data => {
-        socket.emit('vsm-data', { timestamp: new Date().toISOString(), ...data });
-    });
+    // Initial vsm-data sent after join-line
+    // socket.emit('vsm-data', { timestamp: new Date().toISOString(), ...data });
+    // });
     
     socket.on('join-line', function(lineCode) {
         socket.join('line:' + lineCode);
         logger.info('Socket ' + socket.id + ' joined room line:' + lineCode);
+        getVSMData(lineCode).then(function(data) {
+            socket.emit('vsm-data', { timestamp: new Date().toISOString(), ...data });
+        }).catch(function(err) {
+            logger.error('Error sending initial data:', err.message);
+        getVSMData(lineCode).then(function(data) {
+            socket.emit('vsm-data', { timestamp: new Date().toISOString(), ...data });
+        }).catch(function(err) { logger.error('Initial vsm-data error: ' + err.message); });
+        });
     });
 
     socket.on('disconnect', () => {
@@ -773,7 +807,7 @@ setInterval(async () => {
     if (io.engine.clientsCount > 0) {
         try {
             const data = await getVSMData();
-            io.emit('vsm-data', { timestamp: new Date().toISOString(), ...data });
+            productionLineRepo.getActiveLines().then(function(activeLines) { activeLines.forEach(function(l) { getVSMData(l.line_code).then(function(ld) { io.to('line:' + l.line_code).emit('vsm-data', { timestamp: new Date().toISOString(), ...ld }); }); }); });
         } catch (error) {
             logger.error('WebSocket broadcast error:', error.message);
         }

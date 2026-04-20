@@ -139,12 +139,33 @@
     </div>
     <div class="content">
         <div id="panel-lines" class="tab-panel active">
-            <h2 style="font-size:1.1rem; margin-bottom:8px;">Production Lines</h2>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 style="font-size:1.1rem;">Production Lines</h2><button class="btn btn-primary" onclick="openLineModal()">+ New Line</button></div>
             <table>
-                <thead><tr><th>Code</th><th>Name</th><th>Takt</th><th>Target</th><th>Equipment</th><th>Status</th><th>Monitor</th></tr></thead>
+                <thead><tr><th>Code</th><th>Name</th><th>Takt</th><th>Target</th><th>Equipment</th><th>Status</th><th>Monitor</th><th>Actions</th></tr></thead>
                 <tbody id="lines-table"></tbody>
             </table>
         </div>
+            <div class="modal-overlay" id="line-modal">
+                <div class="modal">
+                    <h3 id="line-modal-title">New Line</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Line Name</label><input type="text" id="fl-name" placeholder="e.g. GPEC5 Line 2"></div>
+                        <div class="form-group"><label>Line Code</label><input type="text" id="fl-code" placeholder="e.g. GPEC5_L2" style="text-transform:uppercase"><div class="form-hint">Uppercase, no spaces.</div></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Takt Time (sec)</label><input type="number" id="fl-takt" step="0.1" min="1" placeholder="e.g. 45"></div>
+                        <div class="form-group"><label>Target Output (pcs/shift)</label><input type="number" id="fl-target" min="1" placeholder="e.g. 640"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Shift Hours</label><input type="number" id="fl-shift" step="0.5" min="1" max="24" value="8"></div>
+                        <div class="form-group" id="fl-active-group" style="display:none"><label style="margin-top:20px"><input type="checkbox" id="fl-active"> Active</label></div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-secondary" onclick="closeLineModal()">Cancel</button>
+                        <button class="btn btn-primary" id="btn-save-line" onclick="saveLine()">Save</button>
+                    </div>
+                </div>
+            </div>
         <div id="panel-equipment" class="tab-panel">
             <h2 style="font-size:1.1rem; margin-bottom:12px;">Equipment Management</h2>
             <div class="eq-toolbar">
@@ -308,24 +329,94 @@
                 if (tab.dataset.tab === "system") { startSysRefresh(); } else { stopSysRefresh(); }
             });
         });
-        // Load lines
-        fetch(API_BASE + "/api/lines")
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
+        // === Lines CRUD ===
+        var editingLineId = null;
+        var allLines = [];
+        function loadLines() {
+            fetch(API_BASE + "/api/lines").then(function(r){return r.json();}).then(function(data){
                 if (!data.success) return;
+                allLines = data.lines;
                 var tbody = document.getElementById("lines-table");
                 tbody.innerHTML = data.lines.map(function(l) {
-                    return "<tr>" +
-                        "<td style=font-family:monospace>" + l.line_code + "</td>" +
-                        "<td>" + l.line_name + "</td>" +
-                        "<td>" + parseFloat(l.takt_time) + "s</td>" +
-                        "<td>" + l.target_output + "</td>" +
-                        "<td>" + l.equipment_count + "</td>" +
-                        "<td class=" + (l.is_active ? "badge-on" : "badge-off") + ">" + (l.is_active ? "ON" : "OFF") + "</td>" +
-                        "<td><a href=/admin/monitor/" + l.line_code + " class=monitor-link>View &rarr;</a></td>" +
-                    "</tr>";
+                    return "<tr>"
+                        + "<td style=font-family:monospace>" + l.line_code + "</td>"
+                        + "<td>" + l.line_name + "</td>"
+                        + "<td>" + parseFloat(l.takt_time) + "s</td>"
+                        + "<td>" + l.target_output + "</td>"
+                        + "<td>" + l.equipment_count + "</td>"
+                        + "<td class=" + (l.is_active ? "badge-on" : "badge-off") + ">" + (l.is_active ? "ON" : "OFF") + "</td>"
+                        + "<td><a href=/admin/monitor/" + l.line_code + " class=monitor-link>View &rarr;</a></td>"
+                        + "<td><button class=\"btn btn-secondary btn-sm\" onclick=\"openLineEdit(" + l.id + ")\">Edit</button></td>"
+                    + "</tr>";
                 }).join("");
             });
+        }
+        function openLineModal() {
+            editingLineId = null;
+            document.getElementById("line-modal-title").textContent = "New Line";
+            document.getElementById("fl-name").value = "";
+            document.getElementById("fl-code").value = "";
+            document.getElementById("fl-code").removeAttribute("disabled");
+            document.getElementById("fl-takt").value = "";
+            document.getElementById("fl-target").value = "";
+            document.getElementById("fl-shift").value = "8";
+            document.getElementById("fl-active-group").style.display = "none";
+            document.getElementById("line-modal").classList.add("active");
+        }
+        function openLineEdit(lineId) {
+            var l = allLines.find(function(x){return x.id === lineId;});
+            if (!l) return;
+            editingLineId = lineId;
+            document.getElementById("line-modal-title").textContent = "Edit: " + l.line_code;
+            document.getElementById("fl-name").value = l.line_name;
+            document.getElementById("fl-code").value = l.line_code;
+            document.getElementById("fl-code").setAttribute("disabled","disabled");
+            document.getElementById("fl-takt").value = parseFloat(l.takt_time);
+            document.getElementById("fl-target").value = l.target_output;
+            document.getElementById("fl-shift").value = parseFloat(l.shift_hours);
+            document.getElementById("fl-active").checked = l.is_active;
+            document.getElementById("fl-active-group").style.display = "block";
+            document.getElementById("line-modal").classList.add("active");
+        }
+        function closeLineModal() {
+            document.getElementById("line-modal").classList.remove("active");
+            editingLineId = null;
+        }
+        function saveLine() {
+            var name = document.getElementById("fl-name").value.trim();
+            var code = document.getElementById("fl-code").value.trim().toUpperCase().replace(/s+/g, "_");
+            var takt = parseFloat(document.getElementById("fl-takt").value);
+            var target = parseInt(document.getElementById("fl-target").value);
+            var shift = parseFloat(document.getElementById("fl-shift").value);
+            if (!name || !code) { showToast("Name and Code are required", "error"); return; }
+            if (isNaN(takt) || takt <= 0) { showToast("Takt Time must be positive", "error"); return; }
+            if (isNaN(target) || target <= 0) { showToast("Target Output must be positive", "error"); return; }
+            var payload = { line_name: name, line_code: code, takt_time: takt, target_output: target, shift_hours: shift };
+            if (editingLineId) payload.is_active = document.getElementById("fl-active").checked;
+            var url = editingLineId ? API_BASE + "/api/lines/" + editingLineId : API_BASE + "/api/lines";
+            var method = editingLineId ? "PUT" : "POST";
+            document.getElementById("btn-save-line").disabled = true;
+            document.getElementById("btn-save-line").textContent = "Saving...";
+            fetch(url, { method: method, headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) })
+                .then(function(r){return r.json();})
+                .then(function(data) {
+                    document.getElementById("btn-save-line").disabled = false;
+                    document.getElementById("btn-save-line").textContent = "Save";
+                    if (data.success) {
+                        showToast(editingLineId ? "Line updated" : "Line created", "success");
+                        closeLineModal();
+                        loadLines();
+                    } else {
+                        showToast("Error: " + data.error, "error");
+                    }
+                })
+                .catch(function() {
+                    document.getElementById("btn-save-line").disabled = false;
+                    document.getElementById("btn-save-line").textContent = "Save";
+                    showToast("Network error", "error");
+                });
+        }
+        loadLines();
 
         // === Feature 8: Equipment CRUD ===
         var allEquipment = [];

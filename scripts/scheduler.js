@@ -1,4 +1,4 @@
-﻿/**
+/**
  * VSM Scheduler - Orquestador de tareas automaticas
  * 
  * TAREAS:
@@ -64,7 +64,7 @@ class Scheduler {
 
         // Programar tareas
         // CSV Extractor cada 30 segundos
-        cron.schedule('*/30 * * * * *', async () => {
+        cron.schedule('0 */5 * * * *', async () => {
             await this.runExtractor();
         });
 
