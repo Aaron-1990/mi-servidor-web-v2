@@ -468,6 +468,36 @@ app.put('/api/equipment/:equipmentId', async (req, res) => {
     }
 });
 
+// DELETE /api/equipment/:equipmentId - Delete equipment (3-table atomic)
+app.delete("/api/equipment/:equipmentId", async function(req, res) {
+    try {
+        var equipmentId = req.params.equipmentId;
+        var check = await equipmentRepo.validateEquipmentId(equipmentId);
+        if (!check.exists) {
+            return res.status(404).json({ success: false, error: "Equipment not found: " + equipmentId });
+        }
+        var client = await require("../../../config/database").pool.connect();
+        try {
+            await client.query("BEGIN");
+            var D = String.fromCharCode(36);
+            await client.query("DELETE FROM equipment_metrics WHERE equipment_id = " + D + "1", [equipmentId]);
+            await client.query("DELETE FROM line_processes WHERE equipment_id = " + D + "1", [equipmentId]);
+            await client.query("DELETE FROM equipment_design WHERE equipment_id = " + D + "1", [equipmentId]);
+            await client.query("COMMIT");
+            logger.info("Equipment deleted: " + equipmentId);
+            res.json({ success: true, deleted: equipmentId });
+        } catch (err) {
+            await client.query("ROLLBACK");
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        logger.error("Error deleting equipment: " + error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // PUT /api/equipment/:equipmentId/status - Toggle active/inactive
 app.put('/api/equipment/:equipmentId/status', async (req, res) => {
     try {

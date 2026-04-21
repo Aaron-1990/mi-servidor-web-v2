@@ -483,11 +483,26 @@
                     "<td class=eq-parallel>" + parallel + "</td>" +
                     "<td>" + (e.process_order || "-") + "</td>" +
                     "<td><span class=\"toggle " + statusClass + "\" onclick=\"toggleStatus('" + e.equipment_id + "'," + !e.is_active + ")\" style=cursor:pointer>" + statusText + "</span></td>" +
-                    "<td class=actions-cell><button class=\"btn btn-secondary btn-sm\" onclick=\"openEdit('" + e.equipment_id + "')\">Edit</button></td>" +
+                    "<td class=actions-cell><button class=\"btn btn-secondary btn-sm\" onclick=\"openEdit('" + e.equipment_id + "')\">Edit</button><button class=\"btn btn-danger btn-sm\" onclick=\"deleteEquipment('" + e.equipment_id + "')\">Del</button></td>" +
                 "</tr>";
             }).join("");
         }
 
+
+        function deleteEquipment(eqId) {
+            if (!confirm("Delete " + eqId + "?\nThis will remove all data from equipment_design, line_processes and equipment_metrics.\nThis action cannot be undone.")) return;
+            fetch(API_BASE + "/api/equipment/" + eqId, { method: "DELETE" })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        showToast(eqId + " deleted", "success");
+                        loadEquipment();
+                    } else {
+                        showToast("Error: " + data.error, "error");
+                    }
+                })
+                .catch(function() { showToast("Network error", "error"); });
+        }
         function toggleStatus(eqId, newStatus) {
             fetch(API_BASE + "/api/equipment/" + eqId + "/status", {
                 method: "PUT",
