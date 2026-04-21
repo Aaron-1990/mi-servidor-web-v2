@@ -480,9 +480,26 @@ app.delete("/api/equipment/:equipmentId", async function(req, res) {
         try {
             await client.query("BEGIN");
             var D = String.fromCharCode(36);
+            // Get process_order BEFORE deleting from line_processes
+            var D2 = String.fromCharCode(36);
+            var getOrder = "SELECT process_order, line_id FROM line_processes WHERE equipment_id = " + D2 + "1";
+            var orderResult = await client.query(getOrder, [equipmentId]);
+            var deletedOrder = null;
+            var lineId = null;
+            if (orderResult.rows.length > 0) {
+                deletedOrder = orderResult.rows[0].process_order;
+                lineId = orderResult.rows[0].line_id;
+            }
+
             await client.query("DELETE FROM equipment_metrics WHERE equipment_id = " + D + "1", [equipmentId]);
             await client.query("DELETE FROM line_processes WHERE equipment_id = " + D + "1", [equipmentId]);
-            await client.query("DELETE FROM equipment_design WHERE equipment_id = " + D + "1", [equipmentId]);
+            // Shift process_orders down after delete
+            if (deletedOrder !== null && lineId !== null) {
+                var shiftQ = "UPDATE line_processes SET process_order = process_order - 1 WHERE line_id = " + D2 + "1 AND process_order > " + D2 + "2";
+                await client.query(shiftQ, [lineId, deletedOrder]);
+                logger.info("Shifted process_orders down after deleting " + equipmentId + " (was order " + deletedOrder + ")");
+            }
+
             await client.query("COMMIT");
             logger.info("Equipment deleted: " + equipmentId);
             res.json({ success: true, deleted: equipmentId });
